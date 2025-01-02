@@ -187,4 +187,64 @@ async function checkToken(request: Request, env: Env) {
 	}
 }
 
-export { userRegister, userLogin, fetchUserData, changePassword, resetPassword, checkToken };
+async function sendRpEmail(request: Request, env: Env) {
+	const { DATABASE } = env;
+	const JWT_SECRET = env.JWT_SECRET;
+	const apiKey = env.RESNED_APIKEY;  // 可以将 API Key 放在环境变量中进行管理
+	const fromAddress = 'noreply@lyhsca.org';
+
+	try {
+		// 从请求的 JSON 中获取 email
+		const { email }: { email: string } = await request.json();
+
+		// 查找用户
+		const user = await DATABASE.prepare('SELECT * FROM users WHERE email = ?').bind(email).first();
+		if (!user) {
+			return createResponse({ error: '找不到該用戶' }, 404);
+		}
+
+		// 生成 JWT token 用于密码重置
+		const payload = {
+			email: user.email,
+			exp: Math.floor(Date.now() / 1000) + (10 * 60), // 10分钟后过期
+		};
+		const token = sign(payload, JWT_SECRET);
+
+		// 构建重置密码的链接
+		const resetUrl = `https://auth.lyhsca.org/resetpassword?token=${token}`;
+		const emailContent = `
+            <p>您好，</p>
+            <p>請點擊以下連結來重設您的密碼：</p>
+            <a href="${resetUrl}">${resetUrl}</a>
+            <p>此連結將在一段時間後失效。若您未曾請求重設密碼，請忽略此郵件。</p>
+        `;
+
+		// 发邮件
+		const response = await fetch('https://api.resend.com/emails', {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+				'Authorization': `Bearer ${apiKey}`,
+			},
+			body: JSON.stringify({
+				from: fromAddress,
+				to: email,
+				subject: '密碼重設請求',
+				html: emailContent,
+			}),
+		});
+
+		if (!response.ok) {
+			const errorText = await response.text();
+			throw new Error(`发送邮件失败: ${errorText}`);
+		}
+
+		return createResponse({ message: '密碼重設郵件已發送' }, 200);
+
+	} catch (error) {
+		console.error('發送郵件錯誤:', error);
+		return createResponse({ error: `發送郵件失败: ${error.message}` }, 500);
+	}
+}
+
+export { userRegister, userLogin, fetchUserData, changePassword, resetPassword, checkToken, sendRpEmail };

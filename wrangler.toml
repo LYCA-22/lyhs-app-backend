@@ -13,7 +13,7 @@ database_name = "lycaapis-db"
 database_id = "c154985f-2d35-411c-b4f2-8cc56fc7cfa3"
 
 [env.production]
-vars = { JWT_SECRET = "LyhsPlus2025NEW" }
+vars = { JWT_SECRET = "LyhsPlus2025NEW", RESNED_APIKEY = "re_ijfpWje1_KsgWZGzYRZfbQzVacPkiqoXH"}
 
 [env.dev]
 vars = { JWT_SECRET = "LyhsPlus2025DEV" }
