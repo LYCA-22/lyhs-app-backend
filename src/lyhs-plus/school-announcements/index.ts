@@ -76,3 +76,5 @@ async function getAllAnnouncements() {
 		return createResponse({ error: `Error: No announcements found across pages.` }, 404)
 	}
 }
+
+export { getAllAnnouncements };

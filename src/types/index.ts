@@ -1,6 +1,6 @@
 export interface Env {
 	DATABASE: D1Database;
-	JWT_SECRET: 'LyhsPlus2025NEW';
+	JWT_SECRET: string;
 }
 export interface UserRegisterData {
 	email: string;

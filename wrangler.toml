@@ -1,10 +1,19 @@
 #:schema node_modules/wrangler/config-schema.json
 name = "lyhs-app-backend"
 main = "src/index.ts"
-compatibility_date = "2024-12-30"
+compatibility_flags = ["nodejs_compat_v2"]
+compatibility_date = "2025-01-02"
+
 [observability]
 enabled = true
+
 [[d1_databases]]
 binding = "DATABASE"
 database_name = "lycaapis-db"
 database_id = "c154985f-2d35-411c-b4f2-8cc56fc7cfa3"
+
+[env.production]
+vars = { JWT_SECRET = "LyhsPlus2025NEW" }
+
+[env.dev]
+vars = { JWT_SECRET = "LyhsPlus2025DEV" }

@@ -118,6 +118,7 @@ async function userRegister(request: Request, env: Env) {
 async function userLogin(request: Request, env: Env) {
 	const { DATABASE } = env;
 	const JWT_SECRET = env.JWT_SECRET;
+	console.log(JWT_SECRET);
 	const { email, password }: UserLoginData = await request.json();
 
 	try {
