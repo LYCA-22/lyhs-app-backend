@@ -1,5 +1,6 @@
 import { userRegister, userLogin, changePassword, sendRpEmail, resetPassword, checkToken} from "./auth";
 import { getAllAnnouncements } from "./lyhs-plus/school-announcements/index";
+import { addNewUser } from "./lyhs-plus/web-beta-user-list/index";
 import { Env } from "./types";
 const CORS_HEADERS = {
 	'Access-Control-Allow-Origin': '*',
@@ -30,6 +31,8 @@ async function handleRequest(request: Request, env: Env) {
 			return await sendRpEmail(request, env);
 		} else if (url.pathname === '/resetpassword') {
 			return await resetPassword(request, env);
+		} else if (url.pathname === '/addNewBetaUser') {
+			return await addNewUser(request, env);
 		}
 	}
 

@@ -31,3 +31,7 @@ export interface UserChangePasswordData {
 	oldPassword: string;
 	newPassword: string;
 }
+export interface BetaNewUserData {
+	email: string;
+	name: string;
+}
