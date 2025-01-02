@@ -165,5 +165,26 @@ async function resetPassword(request: Request, env: Env) {
 
 	return createResponse({ message: "密碼更新成功" }, 200);
 }
+async function checkToken(request: Request, env: Env) {
+	const secret = env.JWT_SECRET; // 使用环境变量中的 JWT_SECRET
 
-export { userRegister, userLogin, fetchUserData, changePassword, resetPassword };
+	const url = new URL(request.url);
+	const token = url.searchParams.get("token");
+
+	if (!token) {
+		return createResponse({ error: "Token is missing" }, 400);
+	}
+
+	try {
+		// 使用 jsonwebtoken 的 verify 函数验证 token
+		const payload = verify(token, secret) as { userId: string }; // 验证后解码并获取载荷
+
+		// 如果 token 验证通过，继续执行 fetchUserData 来获取用户信息
+		return await fetchUserData(payload.userId, env);
+	} catch (error) {
+		// 如果 token 无效或过期
+		return createResponse({ error: "Invalid or expired token" }, 401);
+	}
+}
+
+export { userRegister, userLogin, fetchUserData, changePassword, resetPassword, checkToken };
