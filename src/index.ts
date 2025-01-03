@@ -2,11 +2,21 @@ import { userRegister, userLogin, changePassword, sendRpEmail, resetPassword, ve
 import { getAllAnnouncements } from "./lyhs-plus/school-announcements/index";
 import { addNewUser } from "./lyhs-plus/web-beta-user-list/index";
 import { Env } from "./types";
+
 const CORS_HEADERS = {
 	'Access-Control-Allow-Origin': '*',
 	'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
 	'Access-Control-Allow-Headers': 'Content-Type, Authorization',
 };
+export function createResponse(data: object, status: number) {
+	return new Response(JSON.stringify(data), {
+		status,
+		headers: {
+			...CORS_HEADERS,
+			'Content-Type': 'application/json'
+		}
+	});
+}
 
 export default {
 	async fetch(request: Request, env: Env) {
@@ -14,39 +24,45 @@ export default {
 	}
 }
 async function handleRequest(request: Request, env: Env) {
-	const url = new URL(request.url);
-	// 處理 CORS 預檢請求
-	if (request.method === 'OPTIONS') {
-		return new Response(null, { status: 204, headers: CORS_HEADERS });
-	}
-
-	if (request.method === 'POST') {
-		if (request.url.endsWith('/userRegister')) {
-			return await userRegister(request, env);
-		} else if (request.url.endsWith('/userLogin')) {
-			return await userLogin(request, env);
-		} else if (request.url.endsWith('/changePassword')) {
-			return await changePassword(request, env);
-		} else if (request.url.endsWith('/sendRpEmail')) {
-			return await sendRpEmail(request, env);
-		} else if (url.pathname === '/resetpassword') {
-			return await resetPassword(request, env);
-		} else if (url.pathname === '/addNewBetaUser') {
-			return await addNewUser(request, env);
+	try {
+		const url = new URL(request.url);
+		if (request.method === 'OPTIONS') {
+			return new Response(null, { status: 204, headers: CORS_HEADERS });
 		}
-	}
 
-	if (request.method === 'GET') {
-		if (url.pathname === '/veritySession') {
-			return await veritySession(request, env);
-		} else if (request.url.endsWith('/getAD')) {
-			return await getAllAnnouncements();
-		} else if (request.url.endsWith('/getFiles')) {
-			return await fetchSharePointFiles(env);
-		} else if (url.pathname === '/getView') {
-			return await getViewUrl(request, env);
+		if (request.method === 'POST') {
+			if (request.url.endsWith('/userRegister')) {
+				return await userRegister(request, env);
+			} else if (request.url.endsWith('/userLogin')) {
+				return await userLogin(request, env);
+			} else if (request.url.endsWith('/changePassword')) {
+				return await changePassword(request, env);
+			} else if (request.url.endsWith('/sendRpEmail')) {
+				return await sendRpEmail(request, env);
+			} else if (url.pathname === '/resetpassword') {
+				return await resetPassword(request, env);
+			} else if (url.pathname === '/addNewBetaUser') {
+				return await addNewUser(request, env);
+			} else if (request.url.endsWith('/getAD')) {
+				return await getAllAnnouncements();
+			}
+		}
+
+		if (request.method === 'GET') {
+			if (url.pathname === '/veritySession') {
+				return await veritySession(request, env);
+			} else if (request.url.endsWith('/getFiles')) {
+				return await fetchSharePointFiles(env);
+			} else if (url.pathname === '/getView') {
+				return await getViewUrl(request, env);
+			}
+		}
+
+		return createResponse({ error: 'Not Found' }, 404);
+	} catch (error) {
+		console.error("發生錯誤:", error);
+		return createResponse({ error: '服務器內部錯誤' }, 500);
 	}
-	return createResponse({ error: 'Not Found' }, 404);
 }
 
 // 获取 SharePoint 文件列表
@@ -67,6 +83,7 @@ async function fetchSharePointFiles(env) {
 		throw error;
 	}
 }
+
 // 获取站点 ID
 async function getSiteId(siteName, accessToken) {
 	const url = `https://graph.microsoft.com/v1.0/sites?search=${siteName}`;
@@ -90,6 +107,7 @@ async function getSiteId(siteName, accessToken) {
 		throw new Error('No sites found for the specified name.');
 	}
 }
+
 // 获取驱动器（文件库）ID
 async function getDrives(siteId, accessToken) {
 	const url = `https://graph.microsoft.com/v1.0/sites/${siteId}/drives`;
@@ -113,6 +131,7 @@ async function getDrives(siteId, accessToken) {
 		throw new Error('No drives found for the specified site.');
 	}
 }
+
 async function getAnonymousShareLink(driveId, itemId, accessToken) {
 	try {
 		const url = `https://graph.microsoft.com/v1.0/drives/${driveId}/items/${itemId}/createLink`;
@@ -145,6 +164,7 @@ async function getAnonymousShareLink(driveId, itemId, accessToken) {
 		throw error;
 	}
 }
+
 // 修改後的 getFiles 函數，加入匿名連結
 async function getFiles(driveId, accessToken, folderPath = '', depth = 0, maxDepth = 5) {
 	if (depth > maxDepth) return [];
@@ -183,9 +203,9 @@ async function getFiles(driveId, accessToken, folderPath = '', depth = 0, maxDep
 			// 繼續處理其他檔案
 		}
 	}
-
 	return files;
 }
+
 // 获取文件庫 Token 的逻辑
 async function getAccessToken(env) {
 	const { TENANT_ID, CLIENT_SECRET, CLIENT_ID } = env;
@@ -219,6 +239,7 @@ async function getAccessToken(env) {
 		throw error;
 	}
 }
+
 // 前端請求獲取檔案預覽(訪客)
 async function getViewUrl(request, env) {
 	const url = new URL(request.url);
@@ -269,16 +290,3 @@ async function getViewUrl(request, env) {
 		return createResponse(error, 500);
 	}
 }
-}
-
-function createResponse(data, status) {
-	return new Response(JSON.stringify(data), {
-		status,
-		headers: {
-			...CORS_HEADERS,
-			'Content-Type': 'application/json'
-		}
-	});
-}
-
-export { createResponse };

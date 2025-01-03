@@ -1,7 +1,7 @@
 import {createResponse} from '../../index';
 
 // 查詢校網公告
-async function getAD(Url: string) {
+async function getAD(Url) {
 	try {
 		const response = await fetch(Url);
 
@@ -15,7 +15,8 @@ async function getAD(Url: string) {
 			.replace(/<div class="ContentPageChange">[\s\S]*?<\/div>/g, '') // Remove page change divs
 			.replace(/<div id="DivBottom">[\s\S]*?<\/div>/g, ''); // Remove footer divs
 
-		return Array.from(
+		// Extract all matching <div> elements with ContentListEven or ContentListOdd class
+		const matches = Array.from(
 			cleanedText.matchAll(/<div class="(ContentListEven|ContentListOdd)">[\s\S]*?<\/div>/g)
 		).map(match => {
 			let originalDiv = match[0];
@@ -44,7 +45,7 @@ async function getAD(Url: string) {
 
 			// Extract "处室" and create a new div for it outside the <a> tag
 			originalDiv = originalDiv.replace(/<a(.*?)>(.*?)：([\s\S]*?)<\/a>/g, (match, attr, department, rest) => {
-				if (department === '學生事務處') {
+				if (department === '學生事務處'){
 					department = '學務處'
 				}
 				return `<div class="ad_department">${department}</div><a${attr}>${rest}</a>`;
@@ -52,6 +53,8 @@ async function getAD(Url: string) {
 
 			return originalDiv;
 		});
+
+		return matches;
 	} catch (error) {
 		console.error('Error occurred:', error.message || error);
 		return new Response(error.message || 'An error occurred', { status: 500 });

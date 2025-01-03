@@ -91,26 +91,41 @@ export async function userLogin(request: Request, env: Env) {
 
 // 驗證用戶（如果成功將會回傳用戶資料）
 export async function veritySession(request: Request, env: Env) {
-	const sessionId = request.headers.get('authorization');
+	// 从请求头获取 sessionId
+	const sessionId = request.headers.get('Authorization');
 
-	// 檢查是否有 sessionId
-	if (!sessionId) {
-		return createResponse({ error: "SessionId is missing" }, 404);
+	// 检查是否有 sessionId 且格式正确
+	if (!sessionId || !sessionId.startsWith('Bearer ')) {
+		console.error('SessionId is missing or malformed'); // 添加日志
+		return createResponse({ error: "SessionId is missing or malformed" }, 400);
 	}
 
+	const token = sessionId.slice(7); // 去掉 "Bearer " 前缀
+
 	try {
-		const sessionData = await env.KV.get(sessionId, { type: "json" });
+		// 从 KV 存储中获取 session 数据
+		const sessionData = await env.KV.get(token, { type: "json" });
+
+		// 检查 sessionData 是否存在
 		if (!sessionData) {
+			console.error(`Invalid or expired token: ${token}`); // 添加日志
 			return createResponse({ error: "Invalid or expired token" }, 401);
 		}
+
 		const { userId } = sessionData as { userId: string }; // 确保 userId 存在
+
+		// 检查 userId 是否有效
 		if (!userId) {
+			console.error('Malformed session data: missing userId'); // 添加日志
 			return createResponse({ error: "Malformed session data" }, 400);
 		}
 
+		// 调用获取用户数据的函数
 		return await fetchUserData(userId, env);
+
 	} catch (error) {
-		return createResponse({ error: "Invalid or expired token" }, 401);
+		console.error('Error verifying session:', error); // 添加日志
+		return createResponse({ error: "Internal server error" }, 500); // 返回服务器错误
 	}
 }
 
