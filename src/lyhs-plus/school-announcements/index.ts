@@ -1,4 +1,5 @@
 import {createResponse} from '../../index';
+import { CORS_HEADERS } from '../../index';
 
 // 查詢校網公告
 async function getAD(Url) {
@@ -73,7 +74,13 @@ async function getAllAnnouncements() {
 	}
 
 	if (allAnnouncements.length > 0) {
-		return createResponse(allAnnouncements.join('\n'), 200);
+		return new Response(allAnnouncements.join('\n'), {
+			status: 200,
+			headers: {
+				'Content-Type': 'text/html',
+				...CORS_HEADERS
+			}
+		});
 	} else {
 		console.log('No announcements found across pages.');
 		return createResponse({ error: `Error: No announcements found across pages.` }, 404)

@@ -3,7 +3,7 @@ import { getAllAnnouncements } from "./lyhs-plus/school-announcements/index";
 import { addNewUser } from "./lyhs-plus/web-beta-user-list/index";
 import { Env } from "./types";
 
-const CORS_HEADERS = {
+export const CORS_HEADERS = {
 	'Access-Control-Allow-Origin': '*',
 	'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
 	'Access-Control-Allow-Headers': 'Content-Type, Authorization',
