@@ -2,6 +2,7 @@ export interface Env {
 	DATABASE: D1Database;
 	JWT_SECRET: string;
 	RESNED_APIKEY: string;
+	KV: KVNamespace;
 }
 export interface UserRegisterData {
 	email: string;

@@ -2,8 +2,6 @@ import { createResponse } from "../index";
 import { sign, verify } from 'jsonwebtoken';
 import { Env, UserRegisterData, UserLoginData, UserData, UserChangePasswordData } from "../types";
 
-const JWT_SECRET = "LyhsPlus2025NEW"; // 建議將密鑰存儲在環境變數中
-
 // 密碼哈希化
 async function hashPassword(password: string): Promise<string> {
 	const encoder = new TextEncoder();
@@ -61,7 +59,7 @@ async function userRegister(request: Request, env: Env) {
 
 // 用戶登錄
 async function userLogin(request: Request, env: Env) {
-	const { DATABASE } = env;
+	const { DATABASE, KV, JWT_SECRET } = env;
 	const { email, password }: UserLoginData = await request.json();
 
 	try {
@@ -80,8 +78,17 @@ async function userLogin(request: Request, env: Env) {
 			userId: user.id,
 			email: user.email,
 		};
+		const sessionId = crypto.randomUUID();
+		const loginTime = new Date(Date.now()).toISOString();
+		const expirationTime = new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString();
+		const sessionData = JSON.stringify({
+			userId: user.id,
+			email: user.email,
+			loginTime: loginTime,
+			expirationTime: expirationTime,
+		});
+		await KV.put(sessionId, sessionData, { expirationTtl: 2 * 60 * 60 });
 		const token = await generateJWT(payload, JWT_SECRET);
-
 		return createResponse({ token: token }, 200);
 	} catch (error) {
 		console.error("Error during login:", error);

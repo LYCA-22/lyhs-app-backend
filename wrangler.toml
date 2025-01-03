@@ -17,3 +17,7 @@ vars = { JWT_SECRET = "LyhsPlus2025NEW", RESNED_APIKEY = "re_ijfpWje1_KsgWZGzYRZ
 
 [env.dev]
 vars = { JWT_SECRET = "LyhsPlus2025DEV" }
+
+[[kv_namespaces]]
+binding = "KV"
+id = "05dfa7f370304a55addd5cdfe0aece28"
