@@ -1,11 +1,11 @@
-import { userRegister, userLogin, changePassword, sendRpEmail, resetPassword, checkToken} from "./auth";
+import { userRegister, userLogin, changePassword, sendRpEmail, resetPassword, veritySession} from "./auth";
 import { getAllAnnouncements } from "./lyhs-plus/school-announcements/index";
 import { addNewUser } from "./lyhs-plus/web-beta-user-list/index";
 import { Env } from "./types";
 const CORS_HEADERS = {
 	'Access-Control-Allow-Origin': '*',
 	'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
-	'Access-Control-Allow-Headers': 'Content-Type, authorization',
+	'Access-Control-Allow-Headers': 'Content-Type, Authorization',
 };
 
 export default {
@@ -37,8 +37,8 @@ async function handleRequest(request: Request, env: Env) {
 	}
 
 	if (request.method === 'GET') {
-		if (url.pathname === '/checkToken')
-			return await checkToken(request, env);
+		if (url.pathname === '/veritySession') {
+			return await veritySession(request, env);
 		} else if (request.url.endsWith('/getAD')) {
 			return await getAllAnnouncements();
 		} else if (request.url.endsWith('/getFiles')) {
@@ -47,16 +47,6 @@ async function handleRequest(request: Request, env: Env) {
 			return await getViewUrl(request, env);
 	}
 	return createResponse({ error: 'Not Found' }, 404);
-}
-
-export function createResponse(data, status) {
-	return new Response(JSON.stringify(data), {
-		status,
-		headers: {
-			...CORS_HEADERS,
-			'Content-Type': 'application/json'
-		}
-	});
 }
 
 // 获取 SharePoint 文件列表
@@ -279,4 +269,16 @@ async function getViewUrl(request, env) {
 		return createResponse(error, 500);
 	}
 }
+}
 
+function createResponse(data, status) {
+	return new Response(JSON.stringify(data), {
+		status,
+		headers: {
+			...CORS_HEADERS,
+			'Content-Type': 'application/json'
+		}
+	});
+}
+
+export { createResponse };

@@ -10,7 +10,6 @@ async function hashPassword(password: string): Promise<string> {
 	const hashArray = Array.from(new Uint8Array(hashBuffer));
 	return hashArray.map(b => ('00' + b.toString(16)).slice(-2)).join('');
 }
-
 // 生成 JWT
 async function generateJWT(payload: any, secret: string): Promise<string> {
 	return new Promise((resolve, reject) => {
@@ -20,7 +19,6 @@ async function generateJWT(payload: any, secret: string): Promise<string> {
 		});
 	});
 }
-
 // 驗證 JWT
 async function verifyJWT(token: string, secret: string): Promise<any> {
 	return new Promise((resolve, reject) => {
@@ -32,7 +30,7 @@ async function verifyJWT(token: string, secret: string): Promise<any> {
 }
 
 // 用戶註冊
-async function userRegister(request: Request, env: Env) {
+export async function userRegister(request: Request, env: Env) {
 	const { DATABASE } = env;
 	const { email, password, name, admin_access, user_level, user_class, user_grade, user_role }: UserRegisterData = await request.json();
 
@@ -58,8 +56,8 @@ async function userRegister(request: Request, env: Env) {
 }
 
 // 用戶登錄
-async function userLogin(request: Request, env: Env) {
-	const { DATABASE, KV, JWT_SECRET } = env;
+export async function userLogin(request: Request, env: Env) {
+	const { DATABASE, KV } = env;
 	const { email, password }: UserLoginData = await request.json();
 
 	try {
@@ -74,10 +72,6 @@ async function userLogin(request: Request, env: Env) {
 			return createResponse({ error: 'Incorrect password' }, 401);
 		}
 
-		const payload = {
-			userId: user.id,
-			email: user.email,
-		};
 		const sessionId = crypto.randomUUID();
 		const loginTime = new Date(Date.now()).toISOString();
 		const expirationTime = new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString();
@@ -88,11 +82,35 @@ async function userLogin(request: Request, env: Env) {
 			expirationTime: expirationTime,
 		});
 		await KV.put(sessionId, sessionData, { expirationTtl: 2 * 60 * 60 });
-		const token = await generateJWT(payload, JWT_SECRET);
-		return createResponse({ token: token }, 200);
+		return createResponse({ sessionId: sessionId }, 200);
 	} catch (error) {
 		console.error("Error during login:", error);
 		return createResponse({ error: `Error: ${error.message}` }, 500);
+	}
+}
+
+// 驗證用戶（如果成功將會回傳用戶資料）
+export async function veritySession(request: Request, env: Env) {
+	const sessionId = request.headers.get('authorization');
+
+	// 檢查是否有 sessionId
+	if (!sessionId) {
+		return createResponse({ error: "SessionId is missing" }, 404);
+	}
+
+	try {
+		const sessionData = await env.KV.get(sessionId, { type: "json" });
+		if (!sessionData) {
+			return createResponse({ error: "Invalid or expired token" }, 401);
+		}
+		const { userId } = sessionData as { userId: string }; // 确保 userId 存在
+		if (!userId) {
+			return createResponse({ error: "Malformed session data" }, 400);
+		}
+
+		return await fetchUserData(userId, env);
+	} catch (error) {
+		return createResponse({ error: "Invalid or expired token" }, 401);
 	}
 }
 
@@ -112,7 +130,7 @@ async function fetchUserData(userId: string, env: Env) {
 }
 
 // 修改密碼
-async function changePassword(request: Request, env: Env) {
+export async function changePassword(request: Request, env: Env) {
 	const { DATABASE } = env;
 	const { oldPassword, newPassword }: UserChangePasswordData = await request.json();
 
@@ -151,7 +169,7 @@ async function changePassword(request: Request, env: Env) {
 }
 
 // 重設密碼
-async function resetPassword(request: Request, env: Env) {
+export async function resetPassword(request: Request, env: Env) {
 	const { DATABASE } = env;
 	const { token } = new URL(request.url).searchParams;
 
@@ -172,29 +190,9 @@ async function resetPassword(request: Request, env: Env) {
 
 	return createResponse({ message: "密碼更新成功" }, 200);
 }
-async function checkToken(request: Request, env: Env) {
-	const secret = env.JWT_SECRET; // 使用环境变量中的 JWT_SECRET
 
-	const url = new URL(request.url);
-	const token = url.searchParams.get("token");
-
-	if (!token) {
-		return createResponse({ error: "Token is missing" }, 400);
-	}
-
-	try {
-		// 使用 jsonwebtoken 的 verify 函数验证 token
-		const payload = verify(token, secret) as { userId: string }; // 验证后解码并获取载荷
-
-		// 如果 token 验证通过，继续执行 fetchUserData 来获取用户信息
-		return await fetchUserData(payload.userId, env);
-	} catch (error) {
-		// 如果 token 无效或过期
-		return createResponse({ error: "Invalid or expired token" }, 401);
-	}
-}
-
-async function sendRpEmail(request: Request, env: Env) {
+// 發送忘記密碼信件
+export async function sendRpEmail(request: Request, env: Env) {
 	const { DATABASE } = env;
 	const JWT_SECRET = env.JWT_SECRET;
 	const apiKey = env.RESNED_APIKEY;  // 可以将 API Key 放在环境变量中进行管理
@@ -253,5 +251,3 @@ async function sendRpEmail(request: Request, env: Env) {
 		return createResponse({ error: `發送郵件失败: ${error.message}` }, 500);
 	}
 }
-
-export { userRegister, userLogin, fetchUserData, changePassword, resetPassword, checkToken, sendRpEmail };
