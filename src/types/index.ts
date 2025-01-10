@@ -3,6 +3,7 @@ export interface Env {
 	JWT_SECRET: string;
 	RESNED_APIKEY: string;
 	KV: KVNamespace;
+	StaffKV: KVNamespace;
 }
 export interface UserRegisterData {
 	email: string;

@@ -1,6 +1,6 @@
-import { createResponse } from "../index";
+import { createResponse } from '../index';
 import { sign, verify } from 'jsonwebtoken';
-import { Env, UserRegisterData, UserLoginData, UserData, UserChangePasswordData } from "../types";
+import { Env, UserRegisterData, UserLoginData, UserData, UserChangePasswordData } from '../types';
 
 // 密碼哈希化
 async function hashPassword(password: string): Promise<string> {
@@ -8,7 +8,7 @@ async function hashPassword(password: string): Promise<string> {
 	const data = encoder.encode(password);
 	const hashBuffer = await crypto.subtle.digest('SHA-256', data);
 	const hashArray = Array.from(new Uint8Array(hashBuffer));
-	return hashArray.map(b => ('00' + b.toString(16)).slice(-2)).join('');
+	return hashArray.map((b) => ('00' + b.toString(16)).slice(-2)).join('');
 }
 // 生成 JWT
 async function generateJWT(payload: any, secret: string): Promise<string> {
@@ -43,15 +43,96 @@ export async function userRegister(request: Request, env: Env) {
 		const userId = crypto.randomUUID();
 		const hashedPassword = await hashPassword(password);
 
-		await DATABASE.prepare(`
+		await DATABASE.prepare(
+			`
 			INSERT INTO users (id, email, password, name, admin_access, user_level, user_class, user_grade, user_role)
 			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-		`).bind(userId, email, hashedPassword, name, admin_access, user_level, user_class, user_grade, user_role).run();
+		`,
+		)
+			.bind(userId, email, hashedPassword, name, admin_access, user_level, user_class, user_grade, user_role)
+			.run();
 
 		return createResponse({ message: 'User registered successfully' }, 201);
 	} catch (error) {
-		console.error("Error during registration:", error);
+		console.error('Error during registration:', error);
 		return createResponse({ error: `Error: ${error.message}` }, 500);
+	}
+}
+export async function createCode(request: Request, env: Env) {
+	const { DATABASE, KV, StaffKV } = env;
+
+	// 驗證請求格式
+	const sessionId = request.headers.get('Authorization');
+	if (!sessionId?.startsWith('Bearer ')) {
+		console.error('SessionId is missing or malformed');
+		return createResponse({ error: 'SessionId is missing or malformed' }, 400);
+	}
+
+	// 驗證請求體
+	let vl: boolean;
+	try {
+		const body = await request.json();
+		vl = body.vl;
+		if (typeof vl !== 'boolean') {
+			throw new Error('Invalid vl parameter');
+		}
+	} catch (error) {
+		console.error('Invalid request body', error);
+		return createResponse({ error: 'Invalid request body' }, 400);
+	}
+
+	const token = sessionId.slice(7);
+
+	try {
+		const sessionData = await KV.get(token, { type: 'json' });
+
+		// sessionData 是否存在
+		if (!sessionData) {
+			console.error(`Invalid or expired token: ${token}`); // 添加日志
+			return createResponse({ error: 'Invalid or expired token' }, 401);
+		}
+
+		const { userId } = sessionData as { userId: string };
+
+		// 獲取用戶資訊
+		const userData = await DATABASE.prepare(`
+    SELECT user_level, email
+    FROM users
+    WHERE id = ?
+  `)
+			.bind(userId)
+			.first<{ user_level: string; email: string }>();
+
+		if (!userData) {
+			console.error('User not found');
+			return createResponse({ error: 'User not found' }, 404);
+		}
+		const { user_level, email } = userData;
+
+		if (user_level !== 'L04') {
+			console.error('Unauthorized access attempt');
+			return createResponse({ error: 'Unauthorized' }, 403);
+		}
+
+		// 創建邀請碼
+		const code = crypto.randomUUID();
+		const codeData = {
+			createUserId: userId,
+			email: email,
+			vl,
+			user_number: vl ? 10 : 1,
+			createdTime: new Date().toISOString(),
+		};
+
+		await StaffKV.put(code, JSON.stringify(codeData), {
+			expirationTtl: 5 * 60,
+		});
+
+		return createResponse({ code: code }, 200);
+
+	} catch (error) {
+		console.error('Server error:', error);
+		return createResponse({ error: 'Internal server error' }, 500);
 	}
 }
 
@@ -83,49 +164,44 @@ export async function userLogin(request: Request, env: Env) {
 		});
 		await KV.put(sessionId, sessionData, { expirationTtl: 2 * 60 * 60 });
 		return createResponse({ sessionId: sessionId }, 200);
-	} catch (error) {
-		console.error("Error during login:", error);
+	} catch (error: any) {
+		console.error('Error during login:', error);
 		return createResponse({ error: `Error: ${error.message}` }, 500);
 	}
 }
 
 // 驗證用戶（如果成功將會回傳用戶資料）
 export async function veritySession(request: Request, env: Env) {
-	// 从请求头获取 sessionId
 	const sessionId = request.headers.get('Authorization');
 
-	// 检查是否有 sessionId 且格式正确
 	if (!sessionId || !sessionId.startsWith('Bearer ')) {
 		console.error('SessionId is missing or malformed'); // 添加日志
-		return createResponse({ error: "SessionId is missing or malformed" }, 400);
+		return createResponse({ error: 'SessionId is missing or malformed' }, 400);
 	}
 
 	const token = sessionId.slice(7); // 去掉 "Bearer " 前缀
 
 	try {
-		// 从 KV 存储中获取 session 数据
-		const sessionData = await env.KV.get(token, { type: "json" });
+		const sessionData = await env.KV.get(token, { type: 'json' });
 
-		// 检查 sessionData 是否存在
+		// sessionData 是否存在
 		if (!sessionData) {
 			console.error(`Invalid or expired token: ${token}`); // 添加日志
-			return createResponse({ error: "Invalid or expired token" }, 401);
+			return createResponse({ error: 'Invalid or expired token' }, 401);
 		}
 
 		const { userId } = sessionData as { userId: string }; // 确保 userId 存在
 
-		// 检查 userId 是否有效
+		// userId 是否有效
 		if (!userId) {
 			console.error('Malformed session data: missing userId'); // 添加日志
-			return createResponse({ error: "Malformed session data" }, 400);
+			return createResponse({ error: 'Malformed session data' }, 400);
 		}
 
-		// 调用获取用户数据的函数
 		return await fetchUserData(userId, env);
-
 	} catch (error) {
 		console.error('Error verifying session:', error); // 添加日志
-		return createResponse({ error: "Internal server error" }, 500); // 返回服务器错误
+		return createResponse({ error: 'Internal server error' }, 500); // 返回服务器错误
 	}
 }
 
@@ -133,13 +209,17 @@ export async function veritySession(request: Request, env: Env) {
 async function fetchUserData(userId: string, env: Env) {
 	const { DATABASE } = env;
 	try {
-		const user: UserData | null = await DATABASE.prepare('SELECT id, email, name, admin_access, user_level, user_class, user_grade, user_role FROM users WHERE id = ?').bind(userId).first();
+		const user: UserData | null = await DATABASE.prepare(
+			'SELECT id, email, name, admin_access, user_level, user_class, user_grade, user_role FROM users WHERE id = ?',
+		)
+			.bind(userId)
+			.first();
 		if (!user) {
-			return createResponse({ error: "找不到此用戶" }, 404);
+			return createResponse({ error: '找不到此用戶' }, 404);
 		}
 		return createResponse(user, 200);
-	} catch (error) {
-		console.error("Error fetching user data:", error);
+	} catch (error: any) {
+		console.error('Error fetching user data:', error);
 		return createResponse({ error: `Error: ${error.message}` }, 500);
 	}
 }
@@ -150,37 +230,37 @@ export async function changePassword(request: Request, env: Env) {
 	const { oldPassword, newPassword }: UserChangePasswordData = await request.json();
 
 	if (!oldPassword || !newPassword) {
-		return createResponse({ error: "未輸入新密碼與舊密碼" }, 400);
+		return createResponse({ error: '未輸入新密碼與舊密碼' }, 400);
 	}
 
-	const token = request.headers.get("Authorization")?.split(" ")[1];
+	const token = request.headers.get('Authorization')?.split(' ')[1];
 	if (!token) {
-		return createResponse({ error: "找不到帳戶token，請重新登入後重試" }, 401);
+		return createResponse({ error: '找不到帳戶token，請重新登入後重試' }, 401);
 	}
 
 	// 驗證 token
 	const user = await verifyJWT(token, JWT_SECRET);
 	if (!user) {
-		return createResponse({ error: "帳號未驗證，請重新登入後再試" }, 401);
+		return createResponse({ error: '帳號未驗證，請重新登入後再試' }, 401);
 	}
 
 	// 獲取存儲的用戶信息
 	const storedUser = await DATABASE.prepare('SELECT password FROM users WHERE email = ?').bind(user.email).first();
 	if (!storedUser) {
-		return createResponse({ error: "找不到該用戶" }, 404);
+		return createResponse({ error: '找不到該用戶' }, 404);
 	}
 
 	// 驗證舊密碼
 	const isOldPasswordValid = await isPasswordCorrect(oldPassword, storedUser.password);
 	if (!isOldPasswordValid) {
-		return createResponse({ error: "舊密碼輸入錯誤" }, 400);
+		return createResponse({ error: '舊密碼輸入錯誤' }, 400);
 	}
 
 	// 哈希新密碼並更新資料庫
 	const hashedNewPassword = await hashPassword(newPassword);
 	await DATABASE.prepare('UPDATE users SET password = ? WHERE email = ?').bind(hashedNewPassword, user.email).run();
 
-	return createResponse({ message: "密碼更新成功" }, 200);
+	return createResponse({ message: '密碼更新成功' }, 200);
 }
 
 // 重設密碼
@@ -203,14 +283,14 @@ export async function resetPassword(request: Request, env: Env) {
 
 	await DATABASE.prepare('UPDATE users SET password = ? WHERE email = ?').bind(hashedPassword, email).run();
 
-	return createResponse({ message: "密碼更新成功" }, 200);
+	return createResponse({ message: '密碼更新成功' }, 200);
 }
 
 // 發送忘記密碼信件
 export async function sendRpEmail(request: Request, env: Env) {
 	const { DATABASE } = env;
 	const JWT_SECRET = env.JWT_SECRET;
-	const apiKey = env.RESNED_APIKEY;  // 可以将 API Key 放在环境变量中进行管理
+	const apiKey = env.RESNED_APIKEY; // 可以将 API Key 放在环境变量中进行管理
 	const fromAddress = 'noreply@lyhsca.org';
 
 	try {
@@ -226,7 +306,7 @@ export async function sendRpEmail(request: Request, env: Env) {
 		// 生成 JWT token 用于密码重置
 		const payload = {
 			email: user.email,
-			exp: Math.floor(Date.now() / 1000) + (10 * 60), // 10分钟后过期
+			exp: Math.floor(Date.now() / 1000) + 10 * 60, // 10分钟后过期
 		};
 		const token = sign(payload, JWT_SECRET);
 
@@ -244,7 +324,7 @@ export async function sendRpEmail(request: Request, env: Env) {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',
-				'Authorization': `Bearer ${apiKey}`,
+				Authorization: `Bearer ${apiKey}`,
 			},
 			body: JSON.stringify({
 				from: fromAddress,
@@ -260,7 +340,6 @@ export async function sendRpEmail(request: Request, env: Env) {
 		}
 
 		return createResponse({ message: '密碼重設郵件已發送' }, 200);
-
 	} catch (error) {
 		console.error('發送郵件錯誤:', error);
 		return createResponse({ error: `發送郵件失败: ${error.message}` }, 500);

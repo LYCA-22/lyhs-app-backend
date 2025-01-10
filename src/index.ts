@@ -1,4 +1,4 @@
-import { userRegister, userLogin, changePassword, sendRpEmail, resetPassword, veritySession} from "./auth";
+import { userRegister, userLogin, changePassword, sendRpEmail, resetPassword, veritySession, createCode} from "./auth";
 import { getAllAnnouncements } from "./lyhs-plus/school-announcements/index";
 import { addNewUser } from "./lyhs-plus/web-beta-user-list/index";
 import { Env } from "./types";
@@ -43,14 +43,16 @@ async function handleRequest(request: Request, env: Env) {
 				return await resetPassword(request, env);
 			} else if (url.pathname === '/addNewBetaUser') {
 				return await addNewUser(request, env);
-			} else if (request.url.endsWith('/getAD')) {
-				return await getAllAnnouncements();
+			} else if (url.pathname === '/createCode') {
+				return await createCode(request, env);
 			}
 		}
 
 		if (request.method === 'GET') {
 			if (url.pathname === '/veritySession') {
 				return await veritySession(request, env);
+			} else if (request.url.endsWith('/getAD')) {
+				return await getAllAnnouncements();
 			} else if (request.url.endsWith('/getFiles')) {
 				return await fetchSharePointFiles(env);
 			} else if (url.pathname === '/getView') {

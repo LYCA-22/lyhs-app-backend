@@ -21,3 +21,7 @@ vars = { JWT_SECRET = "LyhsPlus2025DEV" }
 [[kv_namespaces]]
 binding = "KV"
 id = "05dfa7f370304a55addd5cdfe0aece28"
+
+[[kv_namespaces]]
+binding = "StaffKV"
+id = "a0bf47a6e46a40f6bbbe9de6a5e69ec7"
