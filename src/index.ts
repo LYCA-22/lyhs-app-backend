@@ -1,7 +1,17 @@
-import { userRegister, userLogin, changePassword, sendRpEmail, resetPassword, veritySession, createCode} from "./auth";
-import { getAllAnnouncements } from "./lyhs-plus/school-announcements/index";
-import { addNewUser } from "./lyhs-plus/web-beta-user-list/index";
-import { Env } from "./types";
+import {
+	userRegister,
+	userLogin,
+	changePassword,
+	sendRpEmail,
+	resetPassword,
+	veritySession,
+	createStaffCode,
+	verifyStaffCode,
+	addNewStaff,
+} from './auth';
+import { getAllAnnouncements } from './lyhs-plus/school-announcements/index';
+import { addNewUser } from './lyhs-plus/web-beta-user-list/index';
+import { Env } from './types';
 
 export const CORS_HEADERS = {
 	'Access-Control-Allow-Origin': '*',
@@ -13,16 +23,16 @@ export function createResponse(data: object, status: number) {
 		status,
 		headers: {
 			...CORS_HEADERS,
-			'Content-Type': 'application/json'
-		}
+			'Content-Type': 'application/json',
+		},
 	});
 }
 
 export default {
 	async fetch(request: Request, env: Env) {
 		return handleRequest(request, env);
-	}
-}
+	},
+};
 async function handleRequest(request: Request, env: Env) {
 	try {
 		const url = new URL(request.url);
@@ -44,7 +54,11 @@ async function handleRequest(request: Request, env: Env) {
 			} else if (url.pathname === '/addNewBetaUser') {
 				return await addNewUser(request, env);
 			} else if (url.pathname === '/createCode') {
-				return await createCode(request, env);
+				return await createStaffCode(request, env);
+			} else if (url.pathname === '/verifyStaffCode') {
+				return await verifyStaffCode(request, env);
+			} else if (url.pathname === '/addStaff') {
+				return await addNewStaff(request, env);
 			}
 		}
 
@@ -62,7 +76,7 @@ async function handleRequest(request: Request, env: Env) {
 
 		return createResponse({ error: 'Not Found' }, 404);
 	} catch (error) {
-		console.error("發生錯誤:", error);
+		console.error('發生錯誤:', error);
 		return createResponse({ error: '服務器內部錯誤' }, 500);
 	}
 }
@@ -79,7 +93,7 @@ async function fetchSharePointFiles(env) {
 		// 4. 獲取文件列表
 		const files = await getFiles(driveId, accessToken);
 
-		return createResponse(files, 200)
+		return createResponse(files, 200);
 	} catch (error) {
 		console.error('Error in fetchSharePointFiles:', error);
 		throw error;
@@ -92,9 +106,9 @@ async function getSiteId(siteName, accessToken) {
 	const response = await fetch(url, {
 		method: 'GET',
 		headers: {
-			'Authorization': `Bearer ${accessToken}`,
-			'Content-Type': 'application/json'
-		}
+			Authorization: `Bearer ${accessToken}`,
+			'Content-Type': 'application/json',
+		},
 	});
 
 	if (!response.ok) {
@@ -104,7 +118,7 @@ async function getSiteId(siteName, accessToken) {
 	const data = await response.json();
 
 	if (data.value && data.value.length > 0) {
-		return data.value[0].id;  // 返回第一个站点的 ID
+		return data.value[0].id; // 返回第一个站点的 ID
 	} else {
 		throw new Error('No sites found for the specified name.');
 	}
@@ -116,9 +130,9 @@ async function getDrives(siteId, accessToken) {
 	const response = await fetch(url, {
 		method: 'GET',
 		headers: {
-			'Authorization': `Bearer ${accessToken}`,
-			'Content-Type': 'application/json'
-		}
+			Authorization: `Bearer ${accessToken}`,
+			'Content-Type': 'application/json',
+		},
 	});
 
 	if (!response.ok) {
@@ -128,7 +142,7 @@ async function getDrives(siteId, accessToken) {
 	const data = await response.json();
 
 	if (data.value && data.value.length > 0) {
-		return data.value[0].id;  // 假设第一个驱动器是我们需要的
+		return data.value[0].id; // 假设第一个驱动器是我们需要的
 	} else {
 		throw new Error('No drives found for the specified site.');
 	}
@@ -140,14 +154,14 @@ async function getAnonymousShareLink(driveId, itemId, accessToken) {
 		const response = await fetch(url, {
 			method: 'POST',
 			headers: {
-				'Authorization': `Bearer ${accessToken}`,
-				'Content-Type': 'application/json'
+				Authorization: `Bearer ${accessToken}`,
+				'Content-Type': 'application/json',
 			},
 			body: JSON.stringify({
 				type: 'view',
 				scope: 'anonymous',
-				responseType: 'content'
-			})
+				responseType: 'content',
+			}),
 		});
 
 		if (!response.ok) {
@@ -172,12 +186,10 @@ async function getFiles(driveId, accessToken, folderPath = '', depth = 0, maxDep
 	if (depth > maxDepth) return [];
 
 	const baseUrl = `https://graph.microsoft.com/v1.0/drives/${driveId}`;
-	const url = folderPath
-		? `${baseUrl}/root:/${encodeURIComponent(folderPath)}:/children`
-		: `${baseUrl}/root/children`;
+	const url = folderPath ? `${baseUrl}/root:/${encodeURIComponent(folderPath)}:/children` : `${baseUrl}/root/children`;
 
 	const response = await fetch(url, {
-		headers: { Authorization: `Bearer ${accessToken}` }
+		headers: { Authorization: `Bearer ${accessToken}` },
 	});
 
 	const data = await response.json();
@@ -190,13 +202,7 @@ async function getFiles(driveId, accessToken, folderPath = '', depth = 0, maxDep
 		try {
 			if (file.folder) {
 				// 如果是資料夾，遞歸獲取子檔案
-				file.children = await getFiles(
-					driveId,
-					accessToken,
-					`${folderPath}/${file.name}`,
-					depth + 1,
-					maxDepth
-				);
+				file.children = await getFiles(driveId, accessToken, `${folderPath}/${file.name}`, depth + 1, maxDepth);
 			}
 
 			files.push(file);
@@ -214,24 +220,24 @@ async function getAccessToken(env) {
 	const tokenUrl = `https://login.microsoftonline.com/${TENANT_ID}/oauth2/v2.0/token`;
 
 	const body = new URLSearchParams({
-		grant_type: "client_credentials",
+		grant_type: 'client_credentials',
 		client_id: CLIENT_ID,
 		client_secret: CLIENT_SECRET,
-		scope: "https://graph.microsoft.com/.default",
+		scope: 'https://graph.microsoft.com/.default',
 	});
 
 	try {
 		const response = await fetch(tokenUrl, {
-			method: "POST",
+			method: 'POST',
 			headers: {
-				"Content-Type": "application/x-www-form-urlencoded",
+				'Content-Type': 'application/x-www-form-urlencoded',
 			},
 			body,
 		});
 
 		if (!response.ok) {
 			const errorText = await response.text();
-			console.error("Token error response:", errorText);
+			console.error('Token error response:', errorText);
 			throw new Error(`Failed to obtain access token: ${response.statusText}`);
 		}
 		const data = await response.json();
@@ -247,9 +253,9 @@ async function getViewUrl(request, env) {
 	const url = new URL(request.url);
 	const fileId = url.searchParams.get('fileId');
 	const accessToken = await getAccessToken(env);
-	console.log(accessToken)
+	console.log(accessToken);
 	if (!fileId) {
-		return createResponse("文件 ID 未提供", 400 );
+		return createResponse('文件 ID 未提供', 400);
 	}
 	// 2. 獲取 site ID
 	console.log('Fetching site ID...');
@@ -267,15 +273,15 @@ async function getViewUrl(request, env) {
 
 		// 向 SharePoint 发送请求
 		const response = await fetch(fileUrl, {
-			method: "GET",
+			method: 'GET',
 			headers: {
 				Authorization: `Bearer ${accessToken}`,
 			},
 		});
 
 		if (!response.ok) {
-			console.error("请求失败:", response.status, await response.text());
-			return createResponse("無法獲取文件", response.status );
+			console.error('请求失败:', response.status, await response.text());
+			return createResponse('無法獲取文件', response.status);
 		}
 
 		// 转发文件响应
@@ -283,12 +289,12 @@ async function getViewUrl(request, env) {
 			status: response.status,
 			headers: {
 				...CORS_HEADERS,
-				"Content-Type": response.headers.get("Content-Type") || "application/octet-stream",
-				"Content-Disposition": response.headers.get("Content-Disposition") || `attachment; filename="${fileId}"`
+				'Content-Type': response.headers.get('Content-Type') || 'application/octet-stream',
+				'Content-Disposition': response.headers.get('Content-Disposition') || `attachment; filename="${fileId}"`,
 			},
 		});
 	} catch (error) {
-		console.error("文件處理錯誤]:", error);
+		console.error('文件處理錯誤]:', error);
 		return createResponse(error, 500);
 	}
 }

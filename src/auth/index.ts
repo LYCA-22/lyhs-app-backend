@@ -1,6 +1,6 @@
 import { createResponse } from '../index';
 import { sign, verify } from 'jsonwebtoken';
-import { Env, UserRegisterData, UserLoginData, UserData, UserChangePasswordData } from '../types';
+import { Env, newUserData, UserLoginData, UserData, UserChangePasswordData, codeData } from '../types';
 
 // 密碼哈希化
 async function hashPassword(password: string): Promise<string> {
@@ -29,10 +29,10 @@ async function verifyJWT(token: string, secret: string): Promise<any> {
 	});
 }
 
-// 用戶註冊
+// 一般用戶註冊
 export async function userRegister(request: Request, env: Env) {
 	const { DATABASE } = env;
-	const { email, password, name, admin_access, user_level, user_class, user_grade, user_role }: UserRegisterData = await request.json();
+	const { email, password, name, level, Class, grade }: newUserData = await request.json();
 
 	try {
 		const existingUser = await DATABASE.prepare('SELECT * FROM users WHERE email = ?').bind(email).first();
@@ -45,11 +45,11 @@ export async function userRegister(request: Request, env: Env) {
 
 		await DATABASE.prepare(
 			`
-			INSERT INTO users (id, email, password, name, admin_access, user_level, user_class, user_grade, user_role)
-			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+			INSERT INTO users (id, email, password, name, admin_access, user_level, user_class, user_grade)
+			VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 		`,
 		)
-			.bind(userId, email, hashedPassword, name, admin_access, user_level, user_class, user_grade, user_role)
+			.bind(userId, email, hashedPassword, name, '0', level, Class, grade)
 			.run();
 
 		return createResponse({ message: 'User registered successfully' }, 201);
@@ -58,7 +58,8 @@ export async function userRegister(request: Request, env: Env) {
 		return createResponse({ error: `Error: ${error.message}` }, 500);
 	}
 }
-export async function createCode(request: Request, env: Env) {
+// 產生Staff授權碼
+export async function createStaffCode(request: Request, env: Env) {
 	const { DATABASE, KV, StaffKV } = env;
 
 	// 驗證請求格式
@@ -69,11 +70,13 @@ export async function createCode(request: Request, env: Env) {
 	}
 
 	// 驗證請求體
-	let vl: boolean;
+	let vuli: boolean;
+	let level: string;
 	try {
-		const body = await request.json();
-		vl = body.vl;
-		if (typeof vl !== 'boolean') {
+		const body: { vuli: boolean; level: string } = await request.json();
+		vuli = body.vuli;
+		level = body.level;
+		if (typeof vuli !== 'boolean') {
 			throw new Error('Invalid vl parameter');
 		}
 	} catch (error) {
@@ -95,11 +98,13 @@ export async function createCode(request: Request, env: Env) {
 		const { userId } = sessionData as { userId: string };
 
 		// 獲取用戶資訊
-		const userData = await DATABASE.prepare(`
+		const userData = await DATABASE.prepare(
+			`
     SELECT user_level, email
     FROM users
     WHERE id = ?
-  `)
+  `,
+		)
 			.bind(userId)
 			.first<{ user_level: string; email: string }>();
 
@@ -115,24 +120,93 @@ export async function createCode(request: Request, env: Env) {
 		}
 
 		// 創建邀請碼
-		const code = crypto.randomUUID();
+		const code = Array.from(crypto.getRandomValues(new Uint8Array(6)))
+			.map((n) => n % 10)
+			.join('');
 		const codeData = {
 			createUserId: userId,
-			email: email,
-			vl,
-			user_number: vl ? 10 : 1,
+			createUserEmail: email,
+			vuli: vuli,
+			level: level,
+			user_number: vuli ? 10 : 1,
 			createdTime: new Date().toISOString(),
 		};
 
 		await StaffKV.put(code, JSON.stringify(codeData), {
-			expirationTtl: 5 * 60,
+			expirationTtl: 60 * 60 * 24,
 		});
 
 		return createResponse({ code: code }, 200);
-
 	} catch (error) {
 		console.error('Server error:', error);
 		return createResponse({ error: 'Internal server error' }, 500);
+	}
+}
+// 驗證授權碼
+export async function verifyStaffCode(request: Request, env: Env) {
+	const { StaffKV } = env;
+	try {
+		const body: { code: string } = await request.json();
+		const code = body.code;
+		const codeData = (await StaffKV.get(code, { type: 'json' })) as codeData | null;
+		if (!codeData) {
+			return createResponse({ error: 'Invalid code' }, 404);
+		}
+		return createResponse({ code: code }, 200);
+	} catch (error) {
+		console.error('Invalid request body', error);
+		return createResponse({ error: 'Invalid request body' }, 400);
+	}
+}
+export async function addNewStaff(request: Request, env: Env) {
+	const { StaffKV, DATABASE } = env;
+
+	try {
+		const body = (await request.json()) as newUserData;
+		const { code, email, name, password, Class, grade, role } = body;
+
+		const existingUser = await DATABASE.prepare('SELECT * FROM users WHERE email = ?').bind(email).first();
+		if (existingUser) {
+			return createResponse({ error: '此帳號已經存在' }, 409);
+		}
+
+		// 驗證必要欄位
+		if (!code) {
+			return createResponse({ error: 'Code is required' }, 400);
+		}
+
+		// 檢查驗證碼
+		const codeData = await StaffKV.get<codeData>(code, { type: 'json' });
+		if (!codeData) {
+			return createResponse({ error: 'Invalid code' }, 404);
+		}
+
+		const hashedPassword = await hashPassword(password);
+		const userId = crypto.randomUUID();
+		const auth_person = codeData.createUserEmail;
+
+		await DATABASE.prepare(
+			`
+			INSERT INTO users (id, email, password, name, admin_access, user_level, user_class, user_grade, user_role, auth_person)
+			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		`,
+		)
+			.bind(userId, email, hashedPassword, name, '1', codeData.level, Class, grade, role, auth_person)
+			.run();
+
+		if (codeData.vuli && codeData.user_number !== 1) {
+			const newCodeData = {
+				...codeData,
+				user_number: codeData.user_number - 1,
+			};
+			await StaffKV.put(code, JSON.stringify(newCodeData));
+		} else {
+			await StaffKV.delete(code);
+		}
+		return createResponse({ message: 'User registered successfully' }, 201);
+	} catch (error) {
+		console.error('Invalid request body', error);
+		return createResponse({ error: 'Invalid request body' }, 400);
 	}
 }
 

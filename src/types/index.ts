@@ -5,15 +5,16 @@ export interface Env {
 	KV: KVNamespace;
 	StaffKV: KVNamespace;
 }
-export interface UserRegisterData {
+export interface newUserData {
+	code?: string;
 	email: string;
 	password: string;
 	name: string;
-	admin_access: boolean;
-	user_level: string;
-	user_class: string;
-	user_grade: string;
-	user_role: string;
+	admin_access?: boolean;
+	level?: string;
+	Class: string;
+	grade: string;
+	role?: string;
 }
 export interface UserLoginData {
 	email: string;
@@ -36,4 +37,13 @@ export interface UserChangePasswordData {
 export interface BetaNewUserData {
 	email: string;
 	name: string;
+}
+
+export interface codeData {
+	createUserId: string;
+	createUserEmail: string;
+	vuli: boolean;
+	level: string;
+	user_number: number;
+	createdTime: string;
 }
