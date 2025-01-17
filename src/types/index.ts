@@ -1,3 +1,4 @@
+// 環境變數類型設定
 export interface Env {
 	DATABASE: D1Database;
 	JWT_SECRET: string;
@@ -5,40 +6,44 @@ export interface Env {
 	KV: KVNamespace;
 	StaffKV: KVNamespace;
 }
-export interface newUserData {
+
+// 用戶資料設定，用於登入以及註冊
+export interface userData {
 	code?: string;
 	email: string;
 	password: string;
 	name: string;
-	admin_access?: boolean;
+	type?: userTypes;
 	level?: string;
 	Class: string;
 	grade: string;
 	role?: string;
 }
-export interface UserLoginData {
+
+enum userTypes {
+	Staff = 'staff',
+	Normal = 'normal',
+}
+
+// 用戶登入資料
+export interface userLoginData {
 	email: string;
 	password: string;
 }
-export interface UserData {
-	id: string;
-	email: string;
-	name: string;
-	admin_access: boolean;
-	user_level: string;
-	user_class: string;
-	user_grade: string;
-	user_role: string;
-}
+
+//用戶變更密碼資料
 export interface UserChangePasswordData {
 	oldPassword: string;
 	newPassword: string;
 }
+
+// Plus官網註冊資料
 export interface BetaNewUserData {
 	email: string;
 	name: string;
 }
 
+// 授權碼資料
 export interface codeData {
 	createUserId: string;
 	createUserEmail: string;
@@ -46,4 +51,12 @@ export interface codeData {
 	level: string;
 	user_number: number;
 	createdTime: string;
+}
+
+// StaffKV
+export interface sessionKVData {
+	userId: string;
+	email: string;
+	loginTime: string;
+	expirationTime: string;
 }

@@ -13,7 +13,7 @@ database_name = "lycaapis-db"
 database_id = "c154985f-2d35-411c-b4f2-8cc56fc7cfa3"
 
 [env.production]
-vars = { JWT_SECRET = "LyhsPlus2025NEW", RESNED_APIKEY = "re_ijfpWje1_KsgWZGzYRZfbQzVacPkiqoXH"}
+vars = { JWT_SECRET = "LyhsPlus2025NEW", RESNED_APIKEY = "re_ijfpWje1_KsgWZGzYRZfbQzVacPkiqoXH" }
 
 [env.dev]
 vars = { JWT_SECRET = "LyhsPlus2025DEV" }
@@ -24,4 +24,4 @@ id = "05dfa7f370304a55addd5cdfe0aece28"
 
 [[kv_namespaces]]
 binding = "StaffKV"
-id = "a0bf47a6e46a40f6bbbe9de6a5e69ec7"
+id = "02838a3b84174d39b89bdfdc722d3020"
