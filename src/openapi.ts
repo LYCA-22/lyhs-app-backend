@@ -1,0 +1,547 @@
+export const openapiSpec = `
+openapi: 3.1.0
+info:
+  title: LYHS App Backend API
+  version: 1.0.0
+  description: API documentation for LYHS App Backend
+
+servers:
+  - url: https://api.lyhsca.org
+
+components:
+  securitySchemes:
+    sessionId:
+      type: http
+      scheme: bearer
+      bearerFormat: opaque
+    userId:
+      type: http
+      scheme: bearer
+      bearerFormat: opaque
+
+tags:
+  - name: 基礎建設
+  - name: 身份驗證
+  - name: 會員帳號
+  - name: 密碼管理
+  - name: 校園資訊整合
+  - name: 學權信箱
+  - name: 內部共享資料庫
+
+paths:
+  /auth/register:
+    post:
+      tags: [會員帳號]
+      summary: 一般帳號註冊
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                email:
+                  type: string
+                password:
+                  type: string
+                class:
+                  type: string
+                grade:
+                  type: string
+      responses:
+        '200':
+          description: User registered successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+  /auth/addstaff:
+    post:
+      tags: [會員帳號]
+      summary: 新增管理員帳號
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                code:
+                  type: string
+                email:
+                  type: string
+                name:
+                  type: string
+                password:
+                  type: string
+                Class:
+                  type: string
+                grade:
+                  type: string
+                role:
+                  type: string
+      responses:
+        '200':
+          description: 具有管理權限的帳號新增成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+  /auth/login:
+    post:
+      tags: [會員帳號]
+      summary: 帳號登入
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                password:
+                  type: string
+      responses:
+        '200':
+          description: User logged in successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  sessionId:
+                    type: string
+  /password/change:
+    post:
+      tags: [密碼管理]
+      summary: 變更密碼
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                oldPassword:
+                  type: string
+                newPassword:
+                  type: string
+      responses:
+        '200':
+          description: Password changed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+      security:
+        - sessionId: []
+
+  /password/forgot:
+    post:
+      tags: [密碼管理]
+      summary: 忘記密碼
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+      responses:
+        '200':
+          description: Password reset email sent
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+
+  /password/reset:
+    post:
+      tags: [密碼管理]
+      summary: 重設密碼（舊版，已無法使用）
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                newPassword:
+                  type: string
+      responses:
+        '200':
+          description: 密碼重設成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+
+  /auth/logout:
+    post:
+      tags: [身份驗證]
+      summary: 用戶登出
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                sessionId:
+                  type: string
+      responses:
+        '200':
+          description: 用戶登出成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+
+  /mail/project/add:
+    post:
+      tags: [學權信箱]
+      summary: 新增信件
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                name:
+                  type: string
+                type:
+                  type: string
+                title:
+                  type: string
+                description:
+                  type: string
+                Class:
+                  type: string
+                number:
+                  type: string
+                solution:
+                  type: string
+      responses:
+        '200':
+          description: 信件新增成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+
+  /mail/project/update:
+    post:
+      tags: [學權信箱]
+      summary: 更新信件內容
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                code:
+                  type: string
+                handler:
+                  type: string
+                status:
+                  type: string
+      responses:
+        '200':
+          description: 信件更新成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+
+  /mail/project/view:
+    post:
+      tags: [學權信箱]
+      summary: 檢視信件（For 投信者）
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                code:
+                  type: string
+      responses:
+        '200':
+          description: Project details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  searchCode:
+                    type: string
+                  email:
+                    type: string
+                  name:
+                    type: string
+                  title:
+                    type: string
+                  description:
+                    type: string
+                  Class:
+                    type: string
+                  number:
+                    type: string
+                  solution:
+                    type: string
+                  handler:
+                    type: string
+                  status:
+                    type: string
+                  createdTime:
+                    type: string
+                  updatedTime:
+                    type: string
+  /mail/project/list:
+    post:
+      tags: [學權信箱]
+      summary: 列出所有信件
+      responses:
+        '200':
+          description: 信件列表
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    allProject:
+                      type: object
+  /mail/project/detail:
+    post:
+      tags: [學權信箱]
+      summary: 獲取信件詳細資料（For 管理者）
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                code:
+                  type: string
+                userId:
+                  type: string
+      responses:
+        '200':
+          description: 信件詳細資料
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  projectData:
+                    type: object
+  /mail/project/delete:
+    delete:
+      tags: [學權信箱]
+      summary: 刪除信件
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                code:
+                  type: string
+                userId:
+                  type: string
+      responses:
+        '200':
+          description: 信件刪除成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+  /auth/code/delete:
+    delete:
+      tags: [身份驗證]
+      summary: 刪除管理身份授權碼
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                code:
+                  type: string
+      responses:
+        '200':
+          description: Staff code deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+      security:
+        - sessionId: []
+
+  /auth/verity:
+    get:
+      tags: [身份驗證]
+      summary: 驗證帳號憑證
+      responses:
+        '200':
+          description: 認證成功，返回用戶數據
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  userData:
+                    type: object
+      security:
+        - sessionId: []
+
+  /getAD:
+    get:
+      tags: [校園資訊整合]
+      summary: 獲取學校網站公告
+      responses:
+        '200':
+          description: List of announcements
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    status:
+                      type: object
+                    data:
+                      type: object
+                    total:
+                      type: string
+  /getFiles:
+    get:
+      tags: [內部共享資料庫]
+      summary: Get SharePoint files
+      responses:
+        '200':
+          description: List of files
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    fileId:
+                      type: string
+                    fileName:
+                      type: string
+
+  /getView:
+    get:
+      tags: [內部共享資料庫]
+      summary: Get file view URL
+      parameters:
+        - name: fileId
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: File view URL
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  url:
+                    type: string
+
+  /status:
+    get:
+      tags: [基礎建設]
+      summary: Get system status
+      responses:
+        '200':
+          description: System status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  version:
+                    type: string
+                  services:
+                    type: object
+                  timestamp:
+                    type: string
+                  environment:
+                    type: string
+
+  /health:
+    get:
+      tags: [基礎建設]
+      summary: Health check
+      responses:
+        '200':
+          description: Health status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  timestamp:
+                    type: string
+
+`;

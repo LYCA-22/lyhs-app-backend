@@ -4,6 +4,8 @@ main = "src/index.ts"
 compatibility_flags = ["nodejs_compat_v2"]
 compatibility_date = "2025-01-02"
 
+rules = [{ type = "Text", globs = ["**/*.yaml"] }]
+
 [observability]
 enabled = true
 
@@ -12,16 +14,10 @@ binding = "DATABASE"
 database_name = "lycaapis-db"
 database_id = "c154985f-2d35-411c-b4f2-8cc56fc7cfa3"
 
-[env.production]
-vars = { JWT_SECRET = "LyhsPlus2025NEW", RESNED_APIKEY = "re_ijfpWje1_KsgWZGzYRZfbQzVacPkiqoXH"}
-
-[env.dev]
-vars = { JWT_SECRET = "LyhsPlus2025DEV" }
-
 [[kv_namespaces]]
-binding = "KV"
+binding = "sessionKV"
 id = "05dfa7f370304a55addd5cdfe0aece28"
 
 [[kv_namespaces]]
-binding = "StaffKV"
-id = "a0bf47a6e46a40f6bbbe9de6a5e69ec7"
+binding = "mailKV"
+id = "90e7fda58e1545f7b7e7259616c24212"
