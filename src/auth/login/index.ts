@@ -105,7 +105,7 @@ export async function veritySession(request: Request, env: Env) {
 	const currentIp = request.headers.get('CF-Connecting-IP') || request.headers.get('X-Forwarded-For') || request.headers.get('X-Real-IP');
 
 	if (!sessionId || !sessionId.startsWith('Bearer ')) {
-		console.error('SessionId is missing or malformed'); // 添加日志
+		console.error('SessionId is missing or malformed');
 		return createResponse({ error: 'SessionId is missing or malformed' }, 400);
 	}
 
