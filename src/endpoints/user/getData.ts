@@ -1,6 +1,6 @@
 import { AppContext } from '../..';
 import { userData } from '../../types';
-import { veritySession } from '..';
+import { veritySession } from '../../util/veritySession';
 
 export async function getUserData(ctx: AppContext) {
 	try {

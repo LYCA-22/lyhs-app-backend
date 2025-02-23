@@ -1,10 +1,9 @@
 import { Hono } from 'hono';
 import { fromHono } from 'chanfana';
-import { AppOptions, AppContext } from '../index';
+import { AppOptions } from '../index';
 import { ServiceStatus } from './status';
 import { registerAuthRoute } from './auth';
 import { registerUserRoute } from './user';
-import { sessionKVData } from '../types';
 
 export function createRouter() {
 	const router = new Hono<AppOptions>();
@@ -18,44 +17,4 @@ export function registerEndpoints() {
 	router.route('/auth', registerAuthRoute());
 	router.route('/user', registerUserRoute());
 	return router;
-}
-
-export async function veritySession(ctx: AppContext): Promise<string | Response> {
-	// 取得 Authorization header（預期格式為 Bearer token）
-	const authHeader = ctx.req.header('Authorization');
-	const currentIp = ctx.req.header('CF-Connecting-IP') || ctx.req.header('X-Forwarded-For') || ctx.req.header('X-Real-IP') || '';
-
-	// 若沒有 token 或格式錯誤，直接回傳400錯誤
-	if (!authHeader || !authHeader.startsWith('Bearer ')) {
-		console.error('SessionId is missing or malformed');
-		return ctx.json({ error: 'SessionId is missing or malformed' }, 400);
-	}
-
-	const token = authHeader.slice(7);
-
-	try {
-		const sessionData = (await ctx.env.sessionKV.get(`session:${token}:data`, { type: 'json' })) as sessionKVData;
-
-		if (!sessionData) {
-			return ctx.json({ error: 'Invalid or expired token' }, 401);
-		}
-
-		if (sessionData.ip !== currentIp) {
-			console.error('IP address mismatch');
-			return ctx.json({ error: 'Session IP mismatch' }, 401);
-		}
-
-		if (!sessionData.userId) {
-			console.error('Malformed session data: missing userId');
-			return ctx.json({ error: 'Malformed session data' }, 400);
-		}
-
-		return sessionData.userId;
-	} catch (error) {
-		if (error instanceof Error) {
-			console.error('Error verifying session:', error);
-			return ctx.json({ error: `Error verifying session: ${error.message}` }, 500);
-		}
-		return ctx.json({ error: 'Unknown error while verifying session' }, 500);
-	}
 }
