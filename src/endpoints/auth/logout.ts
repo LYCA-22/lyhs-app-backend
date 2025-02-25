@@ -1,5 +1,5 @@
 import { AppContext } from '../..';
-import type { Env, userVerifyData, sessionKVData } from '../../types';
+import type { userVerifyData, sessionKVData } from '../../types';
 
 export async function userLogout(ctx: AppContext) {
 	const { email, sessionId }: userVerifyData = await ctx.req.json();

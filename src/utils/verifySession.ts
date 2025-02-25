@@ -1,7 +1,8 @@
 import { AppContext } from '..';
 import { sessionKVData } from '../types';
+import { getIPv6Prefix } from './getIPv6Prefix';
 
-export async function veritySession(ctx: AppContext): Promise<string | Response> {
+export async function verifySession(ctx: AppContext): Promise<string | Response> {
 	// 取得 Authorization header（預期格式為 Bearer token）
 	const authHeader = ctx.req.header('Authorization');
 	const currentIp = ctx.req.header('CF-Connecting-IP') || ctx.req.header('X-Forwarded-For') || ctx.req.header('X-Real-IP') || '';
@@ -18,10 +19,11 @@ export async function veritySession(ctx: AppContext): Promise<string | Response>
 		const sessionData = (await ctx.env.sessionKV.get(`session:${token}:data`, { type: 'json' })) as sessionKVData;
 
 		if (!sessionData) {
+			console.log('Session not found');
 			return ctx.json({ error: 'Invalid or expired token' }, 401);
 		}
 
-		if (sessionData.ip !== currentIp) {
+		if (sessionData.ip !== getIPv6Prefix(currentIp)) {
 			console.error('IP address mismatch');
 			return ctx.json({ error: 'Session IP mismatch' }, 401);
 		}
@@ -34,7 +36,7 @@ export async function veritySession(ctx: AppContext): Promise<string | Response>
 		return sessionData.userId;
 	} catch (error) {
 		if (error instanceof Error) {
-			console.error('Error verifying session:', error);
+			console.error('Error verifying session:', error.message);
 			return ctx.json({ error: `Error verifying session: ${error.message}` }, 500);
 		}
 		return ctx.json({ error: 'Unknown error while verifying session' }, 500);

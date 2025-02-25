@@ -1,5 +1,5 @@
 import type { Env, userVerifyData, sessionKVData } from '../../types';
-import { createResponse } from '../..';
+import { createResponse } from '../../index3';
 
 export async function Logout(request: any, env: Env) {
 	const { sessionKV } = env;

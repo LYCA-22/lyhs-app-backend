@@ -4,6 +4,8 @@ import { AppOptions } from '../index';
 import { ServiceStatus } from './status';
 import { registerAuthRoute } from './auth';
 import { registerUserRoute } from './user';
+import { registerPswRoute } from './password';
+import { registerLypsRoute } from './lyps';
 
 export function createRouter() {
 	const router = new Hono<AppOptions>();
@@ -16,5 +18,7 @@ export function registerEndpoints() {
 
 	router.route('/auth', registerAuthRoute());
 	router.route('/user', registerUserRoute());
+	router.route('/psw', registerPswRoute());
+	router.route('/lyps', registerLypsRoute());
 	return router;
 }

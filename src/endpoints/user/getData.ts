@@ -1,18 +1,15 @@
 import { AppContext } from '../..';
 import { userData } from '../../types';
-import { veritySession } from '../../util/veritySession';
+import { verifySession } from '../../utils/verifySession';
 
 export async function getUserData(ctx: AppContext) {
 	try {
-		// 呼叫 veritySession 進行 token 驗證
-		const result = await veritySession(ctx);
-		// 若 veritySession 回傳的是 Response 物件，代表驗證失敗，直接回傳該錯誤訊息
+		const result = await verifySession(ctx);
 		if (result instanceof Response) {
 			return result;
 		}
 		const userId = result as string;
 
-		// 從資料庫中取得用戶資料
 		const user = (await ctx.env.DATABASE.prepare(
 			'SELECT id, name, email, type, level, class, grade, role, auth_person FROM accountData WHERE id = ?',
 		)

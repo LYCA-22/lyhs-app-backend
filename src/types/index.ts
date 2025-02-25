@@ -1,14 +1,3 @@
-// 環境變數類型設定
-export interface Env {
-	DATABASE: D1Database;
-	JWT_SECRET: string;
-	RESNED_APIKEY: string;
-	sessionKV: KVNamespace;
-	mailKV: KVNamespace;
-	googleClientId: string;
-	googleClientSecret: string;
-}
-
 // 用戶資料設定，用於登入以及註冊
 export interface userData {
 	code?: string;
@@ -117,4 +106,19 @@ export interface BrowserInfo {
 export interface OsInfo {
 	name: string;
 	version: string;
+}
+
+export type UserSession = {
+	loginTime: string;
+	expirationTime: string;
+	browser?: string;
+	ip: string;
+	os?: string;
+};
+
+export interface Announcement {
+	date: string;
+	department: string;
+	title: string;
+	link: string;
 }

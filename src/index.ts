@@ -2,7 +2,7 @@ import { Hono, Context } from 'hono';
 import { HonoOpenAPIRouterType } from 'chanfana';
 import { configureOpenApi } from './core/openapi';
 import { registerEndpoints } from './endpoints';
-import { EnvConfig } from './util/env';
+import { EnvConfig } from './utils/env';
 import { cors } from 'hono/cors';
 import { logger } from 'hono/logger';
 
