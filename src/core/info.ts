@@ -612,5 +612,196 @@ export const openapi = {
 				},
 			},
 		},
+		'v1/lyps/srm/list': {
+			get: {
+				summary: '獲取學權信箱列表',
+				tags: ['學權信箱'],
+				description: '獲取所有學權信箱的資料列表',
+				security: [{ sessionId: [] }],
+				responses: {
+					'200': {
+						description: '成功獲取學權信箱列表',
+						content: {
+							'application/json': {
+								schema: {
+									type: 'object',
+									properties: {
+										data: {
+											type: 'array',
+											items: {
+												type: 'object',
+												properties: {
+													id: {
+														type: 'string',
+														example: '1234567890',
+													},
+													searchCode: {
+														type: 'string',
+														example: '567890',
+													},
+													title: {
+														type: 'string',
+														example: '學權信箱標題',
+													},
+													status: {
+														type: 'string',
+														example: '處理中',
+													},
+													createdTime: {
+														type: 'string',
+														example: '2023-04-01T12:00:00.000Z',
+													},
+													handler: {
+														type: 'string',
+														example: '處理人姓名',
+													},
+													email: {
+														type: 'string',
+														example: '處理人信箱',
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+					'403': {
+						description: '權限不足',
+						content: {
+							'application/json': {
+								schema: {
+									type: 'object',
+									properties: {
+										error: {
+											type: 'string',
+											example: 'Permission denied',
+										},
+									},
+								},
+							},
+						},
+					},
+					'404': {
+						description: '找不到用戶資料',
+						content: {
+							'application/json': {
+								schema: {
+									type: 'object',
+									properties: {
+										error: {
+											type: 'string',
+											example: 'Invalid user',
+										},
+									},
+								},
+							},
+						},
+					},
+					'500': {
+						description: '伺服器錯誤',
+						content: {
+							'application/json': {
+								schema: {
+									type: 'object',
+									properties: {
+										error: {
+											type: 'string',
+											example: 'Server error',
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		'/v1/lyps/srm/add': {
+			put: {
+				summary: '新增學權信箱',
+				tags: ['學權信箱'],
+				requestBody: {
+					require: true,
+					content: {
+						'application/json': {
+							schema: {
+								type: 'object',
+								properties: {
+									email: {
+										type: 'string',
+										format: 'email',
+										example: 'user@example.com',
+									},
+									name: {
+										type: 'string',
+										example: 'Zhicheng',
+									},
+									type: {
+										type: 'string',
+										example: 'type',
+									},
+									title: {
+										type: 'string',
+										example: 'title',
+									},
+									description: {
+										type: 'string',
+										example: 'description',
+									},
+									Class: {
+										type: 'string',
+										example: 'Class',
+									},
+									number: {
+										type: 'number',
+										example: 19,
+									},
+									solution: {
+										type: 'string',
+										example: 'I want ...',
+									},
+								},
+							},
+						},
+					},
+				},
+				responses: {
+					'200': {
+						description: '新增成功',
+						content: {
+							'application/json': {
+								schema: {
+									type: 'object',
+									properties: {
+										code: {
+											type: 'string',
+											example: '123456',
+										},
+									},
+								},
+							},
+						},
+					},
+					'500': {
+						description: '伺服器錯誤',
+						content: {
+							'application/json': {
+								schema: {
+									type: 'object',
+									properties: {
+										error: {
+											type: 'string',
+											example: 'Server error',
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
 	},
 };

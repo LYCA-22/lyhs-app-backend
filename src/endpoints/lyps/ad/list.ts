@@ -1,5 +1,5 @@
-import { AppContext } from '../..';
-import { Announcement } from '../../types';
+import { AppContext } from '../../..';
+import { Announcement } from '../../../types';
 
 async function getAD(url: string): Promise<Announcement[]> {
 	try {
