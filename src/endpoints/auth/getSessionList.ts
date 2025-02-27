@@ -72,7 +72,7 @@ export class getSessionList extends OpenAPIRoute {
 				return result;
 			}
 
-			const sessionData = await env.sessionKV.get(`user:${result}:data`);
+			const sessionData = await env.sessionKV.get(`user:${result}:sessions`);
 			if (!sessionData) {
 				return ctx.json({ error: `No session data found` }, 404);
 			}
