@@ -7,23 +7,24 @@ export function configureOpenApi(app: Hono<AppOptions>) {
 		docs_url: '/swagger',
 		redoc_url: '/redoc',
 		schema: {
+			openapi: '3.0.0',
 			info: {
 				title: '林園高中校園資訊整合系統 API 技術文件',
 				version: '1.0.0',
 				contact: {
-					name: '高校特約技術部門',
-					url: 'https://instagram.com/ukhsc_2025',
-					email: 'contact@ukhsc.org',
+					name: 'Zhicheng',
+					url: 'https://lyhsca.org',
+					email: 'cheng@lyhsca.org',
 				},
 			},
 			servers: [
 				{
-					url: 'http://localhost:8787',
-					description: 'Local Development',
+					url: 'https://api.lyhsca.org',
+					description: 'Production',
 				},
 				{
-					url: 'https://api.ukhsc.org',
-					description: 'Production',
+					url: 'https://localhost:8787',
+					description: 'development',
 				},
 			],
 		},
