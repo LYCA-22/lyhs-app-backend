@@ -158,6 +158,7 @@ export class googleLogin extends OpenAPIRoute {
 				ip: currentIp,
 			});
 			const userSessionData: UserSession = {
+				sessionId: sessionId,
 				loginTime: loginTime,
 				expirationTime: expirationTime,
 				browser: browserInfo.name,

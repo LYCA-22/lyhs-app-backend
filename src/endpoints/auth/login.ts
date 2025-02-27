@@ -136,6 +136,7 @@ export class userLogin extends OpenAPIRoute {
 				ip: currentIp,
 			});
 			const userSessionData = {
+				sessionId: sessionId,
 				loginTime: loginTime,
 				expirationTime: expirationTime,
 				browser: browserInfo.name,
