@@ -4,13 +4,19 @@ import { getUserData } from './getData';
 import { createStaffCode } from './staff/createCode';
 import { userRegister } from './userAdd';
 import { listCode } from './staff/listCode';
+import { verifyCode } from './staff/verifyCode';
+import { addStaff } from './staff/addStaff';
+import { DeleteUser } from './deleteUser';
 
 export function registerUserRoute(): AppRouter {
 	const router = createRouter();
 
-	router.get('/data', (ctx) => getUserData(ctx));
-	router.post('/add', (ctx) => userRegister(ctx));
-	router.put('/staff/code/create', (ctx) => createStaffCode(ctx));
-	router.get('/staff/code/list', (ctx) => listCode(ctx));
+	router.get('/me', getUserData);
+	router.get('/staff/code/list', listCode);
+	router.post('/staff/code/verify', verifyCode);
+	router.post('/add', userRegister);
+	router.put('/staff/code/create', createStaffCode);
+	router.post('/staff/add', addStaff);
+	router.delete('/', DeleteUser);
 	return router;
 }

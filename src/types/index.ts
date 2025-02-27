@@ -109,6 +109,7 @@ export interface OsInfo {
 }
 
 export type UserSession = {
+	sessionId?: string;
 	loginTime: string;
 	expirationTime: string;
 	browser?: string;

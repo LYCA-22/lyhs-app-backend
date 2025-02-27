@@ -1,58 +1,63 @@
 import { OpenAPIRoute, OpenAPIRouteSchema } from 'chanfana';
 import { AppContext } from '../..';
-import type { UserSession } from '../../types';
 import { verifySession } from '../../utils/verifySession';
+import { UserSession } from '../../types';
 
-export class userLogout extends OpenAPIRoute {
+export class deleteSession extends OpenAPIRoute {
 	schema: OpenAPIRouteSchema = {
-		summary: '登出帳號',
+		summary: '刪除 SessionId 資料',
 		tags: ['身份驗證'],
-		description: '登出使用者',
 		security: [{ sessionId: [] }],
 		responses: {
 			200: {
-				description: '登出成功',
+				description: 'SessionId 資料已成功刪除',
 				content: {
 					'application/json': {
 						schema: {
 							type: 'object',
 							properties: {
-								message: { type: 'string' },
+								message: {
+									type: 'string',
+								},
 							},
-							required: ['message'],
+							example: {
+								message: 'Session deleted',
+							},
 						},
 					},
 				},
 			},
 			400: {
-				description: '缺少驗證資訊',
+				description: '缺少欲刪除的 SessionId',
 				content: {
 					'application/json': {
 						schema: {
 							type: 'object',
 							properties: {
-								error: { type: 'string' },
+								error: {
+									type: 'string',
+								},
 							},
-							required: ['error'],
 							example: {
-								error: 'Missing Authorization header',
+								error: 'SessionId is required',
 							},
 						},
 					},
 				},
 			},
 			500: {
-				description: '伺服器錯誤',
+				description: '發生不明錯誤',
 				content: {
 					'application/json': {
 						schema: {
 							type: 'object',
 							properties: {
-								error: { type: 'string' },
+								error: {
+									type: 'string',
+								},
 							},
-							required: ['error'],
 							example: {
-								error: 'Internal Server Error',
+								error: 'Unknown error',
 							},
 						},
 					},
@@ -64,24 +69,22 @@ export class userLogout extends OpenAPIRoute {
 	async handle(ctx: AppContext) {
 		const env = ctx.env;
 		try {
+			const delSessionId = ctx.req.param('sessionId');
+			if (!delSessionId) {
+				return ctx.json({ error: 'SessionId is required' }, 400);
+			}
+
 			const result = await verifySession(ctx);
 			if (result instanceof Response) {
 				return result;
 			}
 
-			const authHeader = ctx.req.header('Authorization');
-			if (!authHeader) {
-				return ctx.json({ error: 'Missing Authorization header' }, 400);
-			}
-
-			const sessionId = authHeader.split(' ')[1];
-
-			await env.sessionKV.delete(`session:${sessionId}:data`);
+			await env.sessionKV.delete(`session:${delSessionId}:data`);
 
 			const existingSessions = await env.sessionKV.get(`user:${result}:sessions`);
 			if (existingSessions) {
 				let sessionList: UserSession[] = JSON.parse(existingSessions);
-				sessionList = sessionList.filter((session) => session.sessionId !== sessionId);
+				sessionList = sessionList.filter((session) => session.sessionId !== delSessionId);
 				if (sessionList.length > 0) {
 					await env.sessionKV.put(`user:${result}:sessions`, JSON.stringify(sessionList));
 				} else {
@@ -89,14 +92,14 @@ export class userLogout extends OpenAPIRoute {
 				}
 			}
 
-			return ctx.json({ message: 'Logout successful' }, 200);
+			return ctx.json({ message: 'Session deleted' }, 200);
 		} catch (error) {
 			if (error instanceof Error) {
-				console.error('Error during logout:', error);
-				return ctx.json({ error: `Error: ${error.message}` }, 500);
+				console.error('Error in deleteSession:', error.message);
+				return ctx.json({ error: error.message }, 500);
 			}
-			console.error('Error during logout:', error);
-			return ctx.json({ error: 'Internal server error' }, 500);
+			console.error(error);
+			return ctx.json({ error: 'Unknown error' }, 500);
 		}
 	}
 }

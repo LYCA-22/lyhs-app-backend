@@ -5,27 +5,84 @@ import { userLogout } from './logout';
 import { verifySession as VS } from '../../utils/verifySession';
 import { BrowserInfo, OsInfo } from '../../types';
 import { googleLogin } from './googleLogin';
+import { OpenAPIRoute, OpenAPIRouteSchema } from 'chanfana';
+import { getSessionList } from './getSessionList';
+import { deleteSession } from './deleteSession';
 
 export function registerAuthRoute(): AppRouter {
 	const router = createRouter();
 
-	router.post('/login', (ctx) => userLogin(ctx));
-	router.post('/logout', (ctx) => userLogout(ctx));
-	router.get('/verify', (ctx) => verifySession(ctx));
-	router.post('/google', (ctx) => googleLogin(ctx));
+	router.post('/google', googleLogin);
+	router.post('/login', userLogin);
+	router.post('/logout', userLogout);
+	router.get('/verify', verifySession);
+	router.get('/sessions/list', getSessionList);
+	router.delete('/session', deleteSession);
 	return router;
 }
 
-async function verifySession(ctx: AppContext) {
-	try {
-		const result = await VS(ctx);
-		if (result instanceof Response) {
-			return result;
-		}
-		return ctx.json({ message: 'Session verified' }, 200);
-	} catch (error) {
-		if (error instanceof Error) {
-			return ctx.json({ error: error.message }, 400);
+class verifySession extends OpenAPIRoute {
+	schema: OpenAPIRouteSchema = {
+		summary: '驗證 SessionId 是否有效',
+		tags: ['身份驗證'],
+		security: [{ sessionId: [] }],
+		responses: {
+			200: {
+				description: '驗證成功',
+				content: {
+					'application/json': {
+						schema: {
+							type: 'object',
+							properties: {
+								message: {
+									type: 'string',
+									description: '驗證成功訊息',
+								},
+							},
+							required: ['message'],
+							example: {
+								message: 'Session verified',
+							},
+						},
+					},
+				},
+			},
+			500: {
+				description: '伺服器錯誤',
+				content: {
+					'application/json': {
+						schema: {
+							type: 'object',
+							properties: {
+								error: {
+									type: 'string',
+									description: '錯誤訊息',
+								},
+							},
+							required: ['error'],
+							example: {
+								error: 'Internal server error',
+							},
+						},
+					},
+				},
+			},
+		},
+	};
+
+	async handle(ctx: AppContext) {
+		try {
+			const result = await VS(ctx);
+			if (result instanceof Response) {
+				return result;
+			}
+			return ctx.json({ message: 'Session verified' }, 200);
+		} catch (error) {
+			if (error instanceof Error) {
+				return ctx.json({ error: error.message }, 500);
+			}
+			console.error('Error occurred during session verification:', error);
+			return ctx.json({ error: 'Internal server error' }, 500);
 		}
 	}
 }

@@ -1,10 +1,52 @@
 import { Hono } from 'hono';
-import { AppOptions } from '..';
-import { openapi } from './info';
+import { AppOptions, AppRouter } from '..';
+import { fromHono, RouterOptions } from 'chanfana';
 
 export function configureOpenApi(app: Hono<AppOptions>) {
+	const options: RouterOptions = {
+		docs_url: '/swagger',
+		redoc_url: '/redoc',
+		schema: {
+			info: {
+				title: '林園高中校園資訊整合系統 API 技術文件',
+				version: '1.0.0',
+				contact: {
+					name: '高校特約技術部門',
+					url: 'https://instagram.com/ukhsc_2025',
+					email: 'contact@ukhsc.org',
+				},
+			},
+			servers: [
+				{
+					url: 'http://localhost:8787',
+					description: 'Local Development',
+				},
+				{
+					url: 'https://api.ukhsc.org',
+					description: 'Production',
+				},
+			],
+		},
+	};
+	const openapi = fromHono(app, options);
+
+	registerSecurity(openapi);
 	addDocumentUI(app);
-	return app;
+
+	return openapi;
+}
+
+function registerSecurity(openapi: AppRouter): void {
+	openapi.registry.registerComponent('securitySchemes', 'sessionId', {
+		type: 'http',
+		scheme: 'bearer',
+		description: 'Bearer token for authenticated users',
+	});
+	openapi.registry.registerComponent('securitySchemes', 'userId', {
+		type: 'http',
+		scheme: 'bearer',
+		description: 'User Account ID',
+	});
 }
 
 function addDocumentUI(app: Hono<AppOptions>) {
@@ -29,9 +71,6 @@ function addDocumentUI(app: Hono<AppOptions>) {
 	});
 	app.get('/', (ctx) => {
 		return ctx.redirect('/docs');
-	});
-	app.get('openapi.json', (ctx) => {
-		return ctx.json(openapi);
 	});
 	app.get('/favicon.svg', () => {
 		return new Response(favicon, { headers: { 'Content-Type': 'image/svg+xml' }, status: 200 });

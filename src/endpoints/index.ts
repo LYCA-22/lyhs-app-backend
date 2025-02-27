@@ -14,7 +14,7 @@ export function createRouter() {
 
 export function registerEndpoints() {
 	const router = createRouter();
-	router.get('/status', (ctx) => ServiceStatus(ctx));
+	router.get('/status', ServiceStatus);
 
 	router.route('/auth', registerAuthRoute());
 	router.route('/user', registerUserRoute());

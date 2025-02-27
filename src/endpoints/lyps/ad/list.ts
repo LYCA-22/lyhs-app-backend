@@ -1,5 +1,106 @@
+import { OpenAPIRoute, OpenAPIRouteSchema } from 'chanfana';
 import { AppContext } from '../../..';
 import { Announcement } from '../../../types';
+
+export class listAd extends OpenAPIRoute {
+	schema: OpenAPIRouteSchema = {
+		summary: '獲取學校網站公告列表',
+		description: '獲取學校網站公告列表，包括標題、發布時間、內容等信息。',
+		tags: ['校園資訊'],
+		responses: {
+			200: {
+				description: '成功獲取公告列表',
+				content: {
+					'application/json': {
+						schema: {
+							type: 'object',
+							properties: {
+								status: {
+									type: 'string',
+									enum: ['success', 'error'],
+								},
+								data: {
+									type: 'array',
+									items: {
+										type: 'object',
+										properties: {
+											date: {
+												type: 'string',
+											},
+											department: {
+												type: 'string',
+											},
+											title: {
+												type: 'string',
+											},
+											link: {
+												type: 'string',
+											},
+										},
+									},
+								},
+								total: {
+									type: 'number',
+								},
+							},
+						},
+					},
+				},
+			},
+			500: {
+				description: '內部伺服器錯誤',
+				content: {
+					'application/json': {
+						schema: {
+							type: 'object',
+							properties: {
+								error: {
+									type: 'string',
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	};
+
+	async handle(ctx: AppContext) {
+		try {
+			const baseUrl =
+				'https://www.ly.kh.edu.tw/view/index.php?WebID=336&MainType=101&SubType=0&MainMenuId=61299&SubMenuId=0&NowMainId=61299&NowSubId=0&page=';
+			const totalPages = 5;
+			let allAnnouncements: Announcement[] = [];
+
+			for (let page = 1; page <= totalPages; page++) {
+				const pageUrl = `${baseUrl}${page}`;
+				console.log(`Fetching page ${pageUrl}`);
+				const pageAnnouncements = await getAD(pageUrl);
+				allAnnouncements = allAnnouncements.concat(pageAnnouncements);
+			}
+
+			if (allAnnouncements.length > 0) {
+				return ctx.json(
+					{
+						status: 'success',
+						data: allAnnouncements,
+						total: allAnnouncements.length,
+					},
+					200,
+				);
+			} else {
+				return ctx.json({ error: 'No announcements found' }, 404);
+			}
+		} catch (error) {
+			if (error instanceof Error) {
+				console.error('Error fetching announcements:', error.message);
+				return ctx.json({ error: `Failed to fetch announcements: ${error.message}` }, 500);
+			}
+			console.error('Error fetching announcements:', error);
+			return ctx.json({ error: 'Internal server error' }, 500);
+		}
+	}
+}
 
 async function getAD(url: string): Promise<Announcement[]> {
 	try {
@@ -49,37 +150,5 @@ async function getAD(url: string): Promise<Announcement[]> {
 	} catch (error) {
 		console.error('Error occurred:', error);
 		throw error;
-	}
-}
-
-export async function listAd(ctx: AppContext) {
-	try {
-		const baseUrl =
-			'https://www.ly.kh.edu.tw/view/index.php?WebID=336&MainType=101&SubType=0&MainMenuId=61299&SubMenuId=0&NowMainId=61299&NowSubId=0&page=';
-		const totalPages = 5;
-		let allAnnouncements: Announcement[] = [];
-
-		for (let page = 1; page <= totalPages; page++) {
-			const pageUrl = `${baseUrl}${page}`;
-			console.log(`Fetching page ${pageUrl}`);
-			const pageAnnouncements = await getAD(pageUrl);
-			allAnnouncements = allAnnouncements.concat(pageAnnouncements);
-		}
-
-		if (allAnnouncements.length > 0) {
-			return ctx.json(
-				{
-					status: 'success',
-					data: allAnnouncements,
-					total: allAnnouncements.length,
-				},
-				200,
-			);
-		} else {
-			return ctx.json({ error: 'No announcements found' }, 404);
-		}
-	} catch (error: any) {
-		console.error('Error fetching announcements:', error);
-		return ctx.json({ error: `Failed to fetch announcements: ${error.message}` }, 500);
 	}
 }
