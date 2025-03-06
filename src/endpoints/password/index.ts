@@ -1,14 +1,14 @@
 import { AppRouter } from '../..';
 import { createRouter } from '..';
-import { forgot } from './forgot';
-import { reset } from './reset';
-import { change } from './change';
+import { forgotPassword } from './forgot';
+import { resetPassword } from './reset';
+import { changePassword } from './change';
 
 export function registerPswRoute(): AppRouter {
 	const router = createRouter();
 
-	router.post('/forgot', (ctx) => forgot(ctx));
-	router.post('/reset', (ctx) => reset(ctx));
-	router.post('/change', (ctx) => change(ctx));
+	router.post('/forgot', forgotPassword);
+	router.put('/reset', resetPassword);
+	router.put('/change', changePassword);
 	return router;
 }

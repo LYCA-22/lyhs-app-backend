@@ -107,7 +107,7 @@ export class getUserData extends OpenAPIRoute {
 		},
 	};
 
-	async getUserData(ctx: AppContext) {
+	async handle(ctx: AppContext) {
 		try {
 			const result = await verifySession(ctx);
 			if (result instanceof Response) {

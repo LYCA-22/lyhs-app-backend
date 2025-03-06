@@ -123,3 +123,8 @@ export interface Announcement {
 	title: string;
 	link: string;
 }
+
+export interface JWTPayload {
+	email: string;
+	exp: number | string;
+}
