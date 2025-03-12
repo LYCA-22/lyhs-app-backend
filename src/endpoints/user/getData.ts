@@ -2,6 +2,7 @@ import { OpenAPIRoute, OpenAPIRouteSchema } from 'chanfana';
 import { AppContext } from '../..';
 import { userData } from '../../types';
 import { verifySession } from '../../utils/verifySession';
+import { getUserInfo } from '../../utils/getUserData';
 
 export class getUserData extends OpenAPIRoute {
 	schema: OpenAPIRouteSchema = {
@@ -115,17 +116,12 @@ export class getUserData extends OpenAPIRoute {
 			}
 			const userId = result as string;
 
-			const user = (await ctx.env.DATABASE.prepare(
-				'SELECT id, name, email, type, level, class, grade, role, auth_person FROM accountData WHERE id = ?',
-			)
-				.bind(userId)
-				.first()) as userData;
-
-			if (!user) {
-				return ctx.json({ error: 'User not found' }, 404);
+			const userData = await getUserInfo(userId, ctx);
+			if (userData instanceof Response) {
+				return userData;
 			}
 
-			return ctx.json({ data: user }, 200);
+			return ctx.json({ data: userData }, 200);
 		} catch (error) {
 			if (error instanceof Error) {
 				console.error('Error fetching user data:', error);

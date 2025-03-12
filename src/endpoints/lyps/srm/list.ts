@@ -2,6 +2,7 @@ import { AppContext } from '../../..';
 import { verifySession } from '../../../utils/verifySession';
 import { studentData } from '../../../types';
 import { OpenAPIRoute, OpenAPIRouteSchema } from 'chanfana';
+import { getUserInfo } from '../../../utils/getUserData';
 
 export class getProjectList extends OpenAPIRoute {
 	schema: OpenAPIRouteSchema = {
@@ -85,13 +86,14 @@ export class getProjectList extends OpenAPIRoute {
 			if (result instanceof Response) {
 				return result;
 			}
+			const userId = result;
 
-			const { results } = await env.DATABASE.prepare('SELECT level FROM accountData WHERE id = ?').bind(result).all();
-			if (!results || results.length === 0) {
-				return ctx.json({ error: 'Invalid user' }, 404);
+			const results = await getUserInfo(userId, ctx);
+			if (results instanceof Response) {
+				return results;
 			}
 
-			const userLevel = results[0].level;
+			const userLevel = results.level;
 			if (userLevel !== 'A1' && userLevel !== 'L3') {
 				return ctx.json({ error: 'Permission denied' }, 403);
 			}

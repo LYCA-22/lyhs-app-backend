@@ -6,4 +6,6 @@ export interface EnvConfig {
 	mailKV: KVNamespace;
 	googleClientId: string;
 	googleClientSecret: string;
+	VAPID_PUBLIC_KEY: string;
+	VAPID_PRIVATE_KEY: string;
 }
