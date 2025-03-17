@@ -1,6 +1,6 @@
 import { AppContext } from '../..';
 import { verifyJWT } from '../../utils/jwtTool';
-import { hashPassword } from '../../utils/pswHash';
+import { hashPassword } from '../../utils/hashPsw';
 import { JWTPayload } from '../../types';
 import { OpenAPIRoute, OpenAPIRouteSchema } from 'chanfana';
 

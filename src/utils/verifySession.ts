@@ -1,6 +1,7 @@
 import { AppContext } from '..';
 import { sessionKVData } from '../types';
 import { getIPv6Prefix } from './getIPv6Prefix';
+import { decryptSessionId } from './hashSession';
 
 export async function verifySession(ctx: AppContext): Promise<string | Response> {
 	// 取得 Authorization header（預期格式為 Bearer token）
@@ -13,9 +14,10 @@ export async function verifySession(ctx: AppContext): Promise<string | Response>
 		return ctx.json({ error: 'SessionId is missing or malformed' }, 400);
 	}
 
-	const token = authHeader.slice(7);
+	let token = authHeader.slice(7);
 
 	try {
+		token = await decryptSessionId(token);
 		const sessionData = (await ctx.env.sessionKV.get(`session:${token}:data`, { type: 'json' })) as sessionKVData;
 
 		if (!sessionData) {

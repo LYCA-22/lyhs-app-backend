@@ -21,7 +21,7 @@ openapi
 				'https://chat.lyhsca.org',
 				'https://admin.lyhsca.org',
 				'https://auth.lyhsca.org',
-				'https://beta.plus.lyhsca.org',
+				'https://app.lyhsca.org',
 			],
 		}),
 	)

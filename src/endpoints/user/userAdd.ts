@@ -1,7 +1,7 @@
 import { OpenAPIRoute, OpenAPIRouteSchema } from 'chanfana';
 import { AppContext } from '../..';
 import { userData } from '../../types';
-import { hashPassword } from '../../utils/pswHash';
+import { hashPassword } from '../../utils/hashPsw';
 
 export class userRegister extends OpenAPIRoute {
 	schema: OpenAPIRouteSchema = {
@@ -101,7 +101,7 @@ export class userRegister extends OpenAPIRoute {
 				VALUES (?, ?, ?, ?, ?, ?, ?)
 			`,
 			)
-				.bind(userId, email, hashedPassword, name, 'normal', Class, grade)
+				.bind(userId, email, hashedPassword, name, 'stu', Class, grade)
 				.run();
 
 			return ctx.json({ message: 'User registered successfully' }, 200);

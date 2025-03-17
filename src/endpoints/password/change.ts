@@ -1,7 +1,7 @@
 import { OpenAPIRoute, OpenAPIRouteSchema } from 'chanfana';
 import { AppContext } from '../..';
 import { UserChangePasswordData, userData, sessionKVData } from '../../types';
-import { hashPassword } from '../../utils/pswHash';
+import { hashPassword, verifyPassword } from '../../utils/hashPsw';
 import { verifySession } from '../../utils/verifySession';
 
 export class changePassword extends OpenAPIRoute {
@@ -118,8 +118,7 @@ export class changePassword extends OpenAPIRoute {
 			}
 
 			const isPasswordCorrect = async (password: string, hashedPassword: string) => {
-				const hashedInputPassword = await hashPassword(password);
-				return hashedInputPassword === hashedPassword;
+				return await verifyPassword(password, hashedPassword);
 			};
 			const isOldPasswordValid = await isPasswordCorrect(oldPassword, storedUser.password);
 			if (!isOldPasswordValid) {

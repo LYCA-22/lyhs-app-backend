@@ -1,11 +1,12 @@
-import { userVerifyData, BrowserInfo, OsInfo } from '../../types';
-import { hashPassword } from '../../utils/pswHash';
+import { userVerifyData, BrowserInfo, OsInfo, userData } from '../../types';
+import { verifyPassword } from '../../utils/hashPsw';
 import { AppContext } from '../..';
 import { parseUserAgent } from './index';
 import { cleanupExpiredSessions } from '../../utils/cleanSessions';
 import { UserSession } from '../../types';
 import { getIPv6Prefix } from '../../utils/getIPv6Prefix';
 import { OpenAPIRoute, OpenAPIRouteSchema } from 'chanfana';
+import { encryptSessionId } from '../../utils/hashSession';
 
 export class userLogin extends OpenAPIRoute {
 	schema: OpenAPIRouteSchema = {
@@ -119,12 +120,15 @@ export class userLogin extends OpenAPIRoute {
 				return ctx.json({ error: 'User not found' }, 404);
 			}
 
-			const hashedPassword = await hashPassword(password);
-			if (hashedPassword !== user.password) {
-				return ctx.json({ error: 'Incorrect password' }, 401);
+			const userData = user as unknown as userData;
+
+			const isPasswordValid = await verifyPassword(password, userData.password);
+			console.log(isPasswordValid);
+			if (!isPasswordValid) {
+				return ctx.json({ error: 'Invalid password' }, 401);
 			}
 
-			const sessionId = crypto.randomUUID();
+			let sessionId = crypto.randomUUID();
 			const loginTime = new Date(Date.now()).toISOString();
 			const expirationTime = new Date(Date.now() + 12 * 60 * 60).toISOString();
 			const currentIp = getIPv6Prefix(clientIp);
@@ -149,6 +153,7 @@ export class userLogin extends OpenAPIRoute {
 			sessionList = cleanupExpiredSessions(sessionList);
 			sessionList.push(userSessionData);
 			await env.sessionKV.put(`user:${user.id}:sessions`, JSON.stringify(sessionList));
+			sessionId = await encryptSessionId(sessionId);
 			return ctx.json({ sessionId: sessionId, userId: user.id }, 200);
 		} catch (error) {
 			if (error instanceof Error) {

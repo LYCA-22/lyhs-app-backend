@@ -1,7 +1,7 @@
 import { OpenAPIRoute, OpenAPIRouteSchema } from 'chanfana';
 import { codeData, userData } from '../../../types';
 import { AppContext } from '../../..';
-import { hashPassword } from '../../../utils/pswHash';
+import { hashPassword } from '../../../utils/hashPsw';
 
 export class addStaff extends OpenAPIRoute {
 	schema: OpenAPIRouteSchema = {
@@ -21,8 +21,9 @@ export class addStaff extends OpenAPIRoute {
 								Class: { type: 'string' },
 								grade: { type: 'string' },
 								role: { type: 'string' },
+								category: { type: 'string' },
 							},
-							required: ['code', 'email', 'name', 'password', 'Class', 'grade', 'role'],
+							required: ['code', 'email', 'name', 'password', 'Class', 'grade', 'role', 'category'],
 						},
 					},
 				},
@@ -107,8 +108,8 @@ export class addStaff extends OpenAPIRoute {
 		const env = ctx.env;
 
 		try {
-			const body = (await ctx.req.json()) as userData;
-			const { code, email, name, password, Class, grade, role } = body;
+			const body = await ctx.req.json();
+			const { code, email, name, password, Class, grade, role, category } = body;
 
 			if (!code) {
 				return ctx.json({ error: 'Code is required' }, 400);
@@ -129,6 +130,15 @@ export class addStaff extends OpenAPIRoute {
 			const hashedPassword = await hashPassword(password);
 			const userId = crypto.randomUUID();
 			const auth_person = codeData.createUserEmail;
+			let type = '';
+
+			if (category === 'staff') {
+				type = 'staff';
+			} else if (category === 'faculty') {
+				type = 'faculty';
+			} else {
+				return ctx.json({ error: 'Invalid category' }, 400);
+			}
 
 			await env.DATABASE.prepare(
 				`
@@ -136,7 +146,7 @@ export class addStaff extends OpenAPIRoute {
 				VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 			`,
 			)
-				.bind(userId, email, hashedPassword, name, 'staff', codeData.level, Class, grade, role, auth_person)
+				.bind(userId, email, hashedPassword, name, type, codeData.level, Class, grade, role, auth_person)
 				.run();
 
 			if (codeData.vuli && codeData.user_number !== 1) {

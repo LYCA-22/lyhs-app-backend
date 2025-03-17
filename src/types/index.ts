@@ -4,16 +4,11 @@ export interface userData {
 	email: string;
 	password: string;
 	name: string;
-	type?: userTypes;
+	type?: 'faculty' | 'staff' | 'stu';
 	level?: string;
 	Class: string;
 	grade: string;
 	role?: string;
-}
-
-enum userTypes {
-	Staff = 'staff',
-	Normal = 'normal',
 }
 
 // 用戶登入資料

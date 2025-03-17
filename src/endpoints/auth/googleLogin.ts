@@ -4,6 +4,7 @@ import { TokenResponse, UserInfo, UserSession } from '../../types';
 import { getIPv6Prefix } from '../../utils/getIPv6Prefix';
 import { cleanupExpiredSessions } from '../../utils/cleanSessions';
 import { OpenAPIRoute, OpenAPIRouteSchema } from 'chanfana';
+import { encryptSessionId } from '../../utils/hashSession';
 
 export class googleLogin extends OpenAPIRoute {
 	schema: OpenAPIRouteSchema = {
@@ -146,7 +147,7 @@ export class googleLogin extends OpenAPIRoute {
 			if (!user) {
 				return ctx.json({ error: 'User not found' }, 404);
 			}
-			const sessionId = crypto.randomUUID();
+			let sessionId = crypto.randomUUID();
 			const loginTime = new Date(Date.now()).toISOString();
 			const expirationTime = new Date(Date.now() + 12 * 60 * 60).toISOString();
 			const currentIp = getIPv6Prefix(clientIp);
@@ -171,6 +172,7 @@ export class googleLogin extends OpenAPIRoute {
 			sessionList = cleanupExpiredSessions(sessionList);
 			sessionList.push(userSessionData);
 			await env.sessionKV.put(`user:${user.id}:sessions`, JSON.stringify(sessionList));
+			sessionId = await encryptSessionId(sessionId);
 			return ctx.json({ sessionId: sessionId, userId: user.id }, 200);
 		} catch (error: any) {
 			console.error('Error Login Google account', error);
