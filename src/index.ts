@@ -22,6 +22,8 @@ openapi
 				'https://admin.lyhsca.org',
 				'https://auth.lyhsca.org',
 				'https://app.lyhsca.org',
+				'http://172.20.10.2:3000',
+				'https://events.lyhsca.org',
 			],
 		}),
 	)

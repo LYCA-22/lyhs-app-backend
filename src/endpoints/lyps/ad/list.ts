@@ -69,7 +69,7 @@ export class listAd extends OpenAPIRoute {
 		try {
 			const baseUrl =
 				'https://www.ly.kh.edu.tw/view/index.php?WebID=336&MainType=101&SubType=0&MainMenuId=61299&SubMenuId=0&NowMainId=61299&NowSubId=0&page=';
-			const totalPages = 5;
+			const totalPages = 7;
 			let allAnnouncements: Announcement[] = [];
 
 			for (let page = 1; page <= totalPages; page++) {

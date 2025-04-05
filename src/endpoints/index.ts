@@ -8,6 +8,7 @@ import { registerPswRoute } from './password';
 import { registerLypsRoute } from './lyps';
 import { registerAdminRoutes } from './admin';
 import { registerCalendarRoutes } from './calendar';
+import { registerOpenFileRoute } from './openfile';
 
 export function createRouter() {
 	const router = new Hono<AppOptions>();
@@ -24,5 +25,6 @@ export function registerEndpoints() {
 	router.route('/lyps', registerLypsRoute());
 	router.route('/cal', registerCalendarRoutes());
 	router.route('/admin', registerAdminRoutes());
+	router.route('/events', registerOpenFileRoute());
 	return router;
 }

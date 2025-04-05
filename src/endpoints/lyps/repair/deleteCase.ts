@@ -8,10 +8,12 @@ export class deleteCase extends OpenAPIRoute {
 		parameters: [
 			{
 				name: 'id',
-				in: 'path',
+				in: 'query',
 				required: true,
-				description: '報修案件 ID',
-				schema: { type: 'string' },
+				schema: {
+					type: 'string',
+					format: 'uuid',
+				},
 			},
 		],
 		responses: {
@@ -53,7 +55,7 @@ export class deleteCase extends OpenAPIRoute {
 	async handle(ctx: AppContext) {
 		const env = ctx.env;
 		try {
-			const id = ctx.req.param('id');
+			const id = ctx.req.query('id');
 			if (!id) {
 				return ctx.json({ error: 'Missing necessary case ID' }, 400);
 			}
