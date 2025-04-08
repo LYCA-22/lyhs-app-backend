@@ -1,9 +1,12 @@
 import { OpenAPIRoute, OpenAPIRouteSchema } from 'chanfana';
 import { AppContext } from '../../..';
+import { GetObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { Repair } from '../../../types';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
 export class getDetailCase extends OpenAPIRoute {
 	schema: OpenAPIRouteSchema = {
-		summary: '獲取詳細資訊',
+		summary: '獲取報修詳細資訊',
 		tags: ['校園資訊'],
 		parameters: [
 			{
@@ -53,6 +56,10 @@ export class getDetailCase extends OpenAPIRoute {
 											type: 'string',
 											format: 'date-time',
 										},
+										ImageUrl: {
+											type: 'string',
+											format: 'url',
+										},
 									},
 								},
 							},
@@ -95,18 +102,38 @@ export class getDetailCase extends OpenAPIRoute {
 
 	async handle(ctx: AppContext) {
 		const env = ctx.env;
+		let imageUrl = '';
+		const s3Client = new S3Client({
+			region: 'us-003',
+			endpoint: 'https://us-003.s3.synologyc2.net',
+			credentials: {
+				accessKeyId: 'usCdBZpYl65Ai68MaLZH7EE36Afh4791',
+				secretAccessKey: 'jM4vQFWKkOEY2SRPEakoVRQYmDXrjhEd',
+			},
+		});
+
 		try {
 			const id = ctx.req.query('id');
 			if (!id) {
 				return ctx.json({ error: 'Missing ID' }, 400);
 			}
-			const result = await env.DATABASE.prepare('SELECT * FROM Repairs WHERE id = ?').bind(id).all();
+			const d1Response = (await env.DATABASE.prepare('SELECT * FROM Repairs WHERE id = ?').bind(id).all()) as D1Result;
 
-			if (!result) {
+			if (!d1Response) {
 				return ctx.json({ error: 'Case Not Found' }, 404);
 			}
+			const result = d1Response.results[0] as unknown as Repair;
 
-			return ctx.json({ status: 'success', data: result }, 200);
+			if (result.imageName) {
+				const command = new GetObjectCommand({
+					Bucket: 'lyca',
+					Key: `repairs/${result.imageName}`,
+				});
+
+				imageUrl = await getSignedUrl(s3Client, command, { expiresIn: 3600 });
+			}
+
+			return ctx.json({ status: 'success', data: { ...result, ImageUrl: imageUrl } }, 200);
 		} catch (error) {
 			if (error instanceof Error) {
 				console.error(error);

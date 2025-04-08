@@ -123,3 +123,11 @@ export interface JWTPayload {
 	email: string;
 	exp: number | string;
 }
+
+export interface Repair {
+	title: string;
+	description: string;
+	category: string;
+	status: string;
+	imageName: string;
+}
