@@ -1,8 +1,9 @@
-import { sign, verify } from 'jsonwebtoken';
+import { sign, SignOptions, verify } from 'jsonwebtoken';
 
-export async function generateJWT(payload: any, secret: string): Promise<string> {
+export async function generateJWT(payload: any, secret: string, expiresIn: string = '2h'): Promise<string> {
 	return new Promise((resolve, reject) => {
-		sign(payload, secret, { expiresIn: '2h' }, (err, token) => {
+		const options: SignOptions = { expiresIn: expiresIn as any };
+		sign(payload, secret, options, (err, token) => {
 			if (err) reject(err);
 			resolve(token!);
 		});

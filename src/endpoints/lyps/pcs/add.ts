@@ -6,7 +6,7 @@ import { getUserInfo } from '../../../utils/getUserData';
 export class AddPcs extends OpenAPIRoute {
 	schema: OpenAPIRouteSchema = {
 		summary: '新增政見資料',
-		tags: ['班聯會資料'],
+		tags: ['班聯會內部管理'],
 		security: [{ sessionId: [] }],
 		request: {
 			body: {

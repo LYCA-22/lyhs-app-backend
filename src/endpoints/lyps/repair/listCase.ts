@@ -59,14 +59,6 @@ export class listCases extends OpenAPIRoute {
 			if (result instanceof Response) {
 				return result;
 			}
-			if (!result) {
-				return ctx.json({ error: 'Invalid session' }, 401);
-			}
-			const userId = result as string;
-			const userData = await getUserInfo(userId, ctx);
-			if (userData.type === 'stu') {
-				return ctx.json({ error: 'Forbidden' }, 403);
-			}
 
 			const caseData = await env.DATABASE.prepare('SELECT * FROM Repairs ORDER BY created_at DESC').all();
 			const cases = caseData.results as unknown as Repair[];

@@ -1,24 +1,29 @@
 import { AppContext } from '..';
 import { sessionKVData } from '../types';
 import { getIPv6Prefix } from './getIPv6Prefix';
-import { decryptSessionId } from './hashSession';
+import { decryptToken } from './hashSessionId';
 
-export async function verifySession(ctx: AppContext): Promise<string | Response> {
-	// 取得 Authorization header（預期格式為 Bearer token）
-	const authHeader = ctx.req.header('Authorization');
+export async function verifySession(ctx: AppContext): Promise<String | Response> {
+	let sessionId = ctx.req.header('Session-Id');
+	let type = ctx.req.header('Login-Type');
 	const currentIp = ctx.req.header('CF-Connecting-IP') || ctx.req.header('X-Forwarded-For') || ctx.req.header('X-Real-IP') || '';
 
-	// 若沒有 token 或格式錯誤，直接回傳400錯誤
-	if (!authHeader || !authHeader.startsWith('Bearer ')) {
-		console.error('SessionId is missing or malformed');
-		return ctx.json({ error: 'SessionId is missing or malformed' }, 400);
+	// 若沒有 token 或格式錯誤，回傳400錯誤
+	if (!sessionId || !type) {
+		console.error('SessionId or Login-Type is missing or malformed');
+		return ctx.json({ error: 'Token or Login-Type is missing or malformed' }, 400);
 	}
 
-	let token = authHeader.slice(7);
+	if (type !== 'WEB' && type !== 'APP') {
+		return ctx.json({ error: 'Invalid Login-Type' }, 400);
+	}
 
 	try {
-		token = await decryptSessionId(token);
-		const sessionData = (await ctx.env.sessionKV.get(`session:${token}:data`, { type: 'json' })) as sessionKVData;
+		// 解密token
+		const decryptedSession = await decryptToken(sessionId);
+
+		// 從KV中獲取session數據
+		const sessionData = (await ctx.env.sessionKV.get(`session:${decryptedSession}:data`, { type: 'json' })) as sessionKVData;
 
 		if (!sessionData) {
 			console.log('Session not found');

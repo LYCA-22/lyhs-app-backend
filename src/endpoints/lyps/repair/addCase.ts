@@ -13,9 +13,10 @@ export class addCase extends OpenAPIRoute {
 						schema: {
 							type: 'object',
 							properties: {
-								title: { type: 'string' },
-								description: { type: 'string' },
-								category: { type: 'string' },
+								title: { type: 'string', description: '案件標題' },
+								description: { type: 'string', description: '回報說明' },
+								category: { type: 'string', description: '回報類型' },
+								reward: { type: 'string', description: '回報者姓名' },
 							},
 							required: ['title', 'description', 'category'],
 						},
@@ -60,6 +61,7 @@ export class addCase extends OpenAPIRoute {
 		const title = formData.get('title') as string;
 		const description = formData.get('description') as string;
 		const category = formData.get('category') as string;
+		const reward = formData.get('reward') as string;
 		const imageFile = formData.get('image') as File | null;
 		const env = ctx.env;
 
@@ -92,8 +94,8 @@ export class addCase extends OpenAPIRoute {
 				);
 			}
 
-			await env.DATABASE.prepare('INSERT INTO Repairs (title, description, category, status, imageName) VALUES (?, ?, ?, ?, ?)')
-				.bind(title, description, category, '已收到回報', fileName)
+			await env.DATABASE.prepare('INSERT INTO Repairs (title, description, category, status, imageName, reward) VALUES (?, ?, ?, ?, ?, ?)')
+				.bind(title, description, category, '已收到回報', fileName, reward)
 				.run();
 			return ctx.json({ message: 'Case added successfully' }, 200);
 		} catch (e) {

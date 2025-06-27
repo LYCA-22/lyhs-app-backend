@@ -1,12 +1,11 @@
-import { userVerifyData, BrowserInfo, OsInfo, userData } from '../../types';
+import { userVerifyData, userData, UserSession } from '../../types';
 import { verifyPassword } from '../../utils/hashPsw';
 import { AppContext } from '../..';
 import { parseUserAgent } from './index';
-import { cleanupExpiredSessions } from '../../utils/cleanSessions';
-import { UserSession } from '../../types';
 import { getIPv6Prefix } from '../../utils/getIPv6Prefix';
 import { OpenAPIRoute, OpenAPIRouteSchema } from 'chanfana';
-import { encryptSessionId } from '../../utils/hashSession';
+import { encryptToken } from '../../utils/hashSessionId';
+import { cleanupExpiredSessions } from '../../utils/cleanSessions';
 
 export class userLogin extends OpenAPIRoute {
 	schema: OpenAPIRouteSchema = {
@@ -107,11 +106,16 @@ export class userLogin extends OpenAPIRoute {
 		const env = ctx.env;
 		const { email, password }: userVerifyData = await ctx.req.json();
 		const userAgent = ctx.req.header('User-Agent') || '';
+		const loginType = ctx.req.header('Login-Type') || '';
 		const { browser: browserInfo, os: osInfo } = parseUserAgent(userAgent);
 		const clientIp = ctx.req.header('CF-Connecting-IP') || ctx.req.header('X-Forwarded-For') || ctx.req.header('X-Real-IP') || 'unknown';
 
-		if (!password) {
-			return ctx.json({ error: 'Password is missing' }, 400);
+		if (!password || !email || !loginType) {
+			return ctx.json({ error: 'Require data is missing' }, 400);
+		}
+
+		if (loginType != 'APP' && loginType != 'WEB') {
+			return ctx.json({ error: 'Invalid login type' }, 400);
 		}
 
 		try {
@@ -121,9 +125,7 @@ export class userLogin extends OpenAPIRoute {
 			}
 
 			const userData = user as unknown as userData;
-
 			const isPasswordValid = await verifyPassword(password, userData.password);
-			console.log(isPasswordValid);
 			if (!isPasswordValid) {
 				return ctx.json({ error: 'Invalid password' }, 401);
 			}
@@ -136,24 +138,30 @@ export class userLogin extends OpenAPIRoute {
 				userId: user.id,
 				email: user.email,
 				loginTime: loginTime,
-				expirationTime: expirationTime,
+				iat: loginTime,
+				exp: expirationTime,
 				ip: currentIp,
+				lgt: loginType,
 			});
-			const userSessionData = {
+			const userSessionData: UserSession = {
 				sessionId: sessionId,
-				loginTime: loginTime,
-				expirationTime: expirationTime,
+				iat: loginTime,
+				exp: expirationTime,
 				browser: browserInfo.name,
 				ip: currentIp,
 				os: osInfo.name,
+				igt: loginType,
 			};
-			await env.sessionKV.put(`session:${sessionId}:data`, sessionData, { expirationTtl: 12 * 60 * 60 });
+
+			await env.sessionKV.put(`session:${sessionId}:data`, sessionData, {
+				expirationTtl: loginType === 'APP' ? 24 * 60 * 60 * 30 : 5 * 60 * 60,
+			});
 			const existingSessions = await env.sessionKV.get(`user:${user.id}:sessions`);
 			let sessionList: UserSession[] = existingSessions ? JSON.parse(existingSessions) : [];
 			sessionList = cleanupExpiredSessions(sessionList);
 			sessionList.push(userSessionData);
 			await env.sessionKV.put(`user:${user.id}:sessions`, JSON.stringify(sessionList));
-			sessionId = await encryptSessionId(sessionId);
+			sessionId = await encryptToken(sessionId);
 			return ctx.json({ sessionId: sessionId, userId: user.id }, 200);
 		} catch (error) {
 			if (error instanceof Error) {

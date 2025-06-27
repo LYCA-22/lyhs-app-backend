@@ -135,7 +135,7 @@ async function getAD(url: string): Promise<Announcement[]> {
 				}
 
 				const linkMatch = divContent.match(/href="(.*?)"/);
-				const link = linkMatch ? `https://www.ly.kh.edu.tw/view/${linkMatch[1]}` : '';
+				const link = linkMatch ? `https://www.ly.kh.edu.tw${linkMatch[1]}` : '';
 
 				announcements.push({
 					date,

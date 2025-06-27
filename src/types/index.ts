@@ -105,11 +105,12 @@ export interface OsInfo {
 
 export type UserSession = {
 	sessionId?: string;
-	loginTime: string;
-	expirationTime: string;
+	iat: string;
+	exp: string;
 	browser?: string;
 	ip: string;
 	os?: string;
+	igt: string;
 };
 
 export interface Announcement {

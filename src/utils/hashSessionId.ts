@@ -9,15 +9,15 @@ async function getKey() {
 	return crypto.subtle.importKey('raw', rawKey, { name: 'AES-GCM' }, false, ['encrypt', 'decrypt']);
 }
 
-export async function encryptSessionId(sessionId: string): Promise<string> {
+export async function encryptToken(token: string): Promise<string> {
 	const key = await getKey();
 	const iv = crypto.getRandomValues(new Uint8Array(IV_LENGTH));
-	const encrypted = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, encoder.encode(sessionId));
+	const encrypted = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, encoder.encode(token));
 	return `${btoa(String.fromCharCode(...iv))}.${btoa(String.fromCharCode(...new Uint8Array(encrypted)))}`;
 }
 
-export async function decryptSessionId(encryptedSessionId: string): Promise<string> {
-	const [ivBase64, encryptedBase64] = encryptedSessionId.split('.');
+export async function decryptToken(encryptedToken: string): Promise<string> {
+	const [ivBase64, encryptedBase64] = encryptedToken.split('.');
 	const iv = Uint8Array.from(atob(ivBase64), (c) => c.charCodeAt(0));
 	const encrypted = Uint8Array.from(atob(encryptedBase64), (c) => c.charCodeAt(0));
 	const key = await getKey();

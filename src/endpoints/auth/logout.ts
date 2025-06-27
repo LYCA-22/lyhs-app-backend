@@ -69,12 +69,10 @@ export class userLogout extends OpenAPIRoute {
 				return result;
 			}
 
-			const authHeader = ctx.req.header('Authorization');
-			if (!authHeader) {
-				return ctx.json({ error: 'Missing Authorization header' }, 400);
+			const sessionId = ctx.req.header('Session-Id');
+			if (!sessionId) {
+				return ctx.json({ error: 'Missing sessionId header' }, 400);
 			}
-
-			const sessionId = authHeader.split(' ')[1];
 
 			await env.sessionKV.delete(`session:${sessionId}:data`);
 

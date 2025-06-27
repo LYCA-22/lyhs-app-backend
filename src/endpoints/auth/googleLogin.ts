@@ -4,7 +4,7 @@ import { TokenResponse, UserInfo, UserSession } from '../../types';
 import { getIPv6Prefix } from '../../utils/getIPv6Prefix';
 import { cleanupExpiredSessions } from '../../utils/cleanSessions';
 import { OpenAPIRoute, OpenAPIRouteSchema } from 'chanfana';
-import { encryptSessionId } from '../../utils/hashSession';
+import { encryptToken } from '../../utils/hashSessionId';
 
 export class googleLogin extends OpenAPIRoute {
 	schema: OpenAPIRouteSchema = {
@@ -97,6 +97,7 @@ export class googleLogin extends OpenAPIRoute {
 		const googleClientSecret = env.googleClientSecret;
 		const googleClientId = env.googleClientId;
 		const userAgent = ctx.req.header('User-Agent') || '';
+		const loginType = ctx.req.header('Login-Type') || '';
 		const { browser: browserInfo, os: osInfo } = parseUserAgent(userAgent);
 		const clientIp = ctx.req.header('CF-Connecting-IP') || ctx.req.header('X-Forwarded-For') || ctx.req.header('X-Real-IP') || 'unknown';
 		const { flow, grant_value, redirect_uri } = (await ctx.req.json()) as {
@@ -104,6 +105,10 @@ export class googleLogin extends OpenAPIRoute {
 			grant_value: string;
 			redirect_uri: string;
 		};
+
+		if (loginType != 'APP' && loginType != 'WEB') {
+			return ctx.json({ error: 'Invalid login type' }, 400);
+		}
 
 		if (flow !== 'authorization_code') {
 			return ctx.json({ error: 'Invalid flow type' }, 400);
@@ -154,25 +159,29 @@ export class googleLogin extends OpenAPIRoute {
 			const sessionData = JSON.stringify({
 				userId: user.id,
 				email: user.email,
-				loginTime: loginTime,
-				expirationTime: expirationTime,
+				iat: loginTime,
+				exp: expirationTime,
 				ip: currentIp,
+				igt: loginType,
 			});
 			const userSessionData: UserSession = {
 				sessionId: sessionId,
-				loginTime: loginTime,
-				expirationTime: expirationTime,
+				iat: loginTime,
+				exp: expirationTime,
 				browser: browserInfo.name,
 				ip: currentIp,
 				os: osInfo.name,
+				igt: loginType,
 			};
-			await env.sessionKV.put(`session:${sessionId}:data`, sessionData, { expirationTtl: 12 * 60 * 60 });
+			await env.sessionKV.put(`session:${sessionId}:data`, sessionData, {
+				expirationTtl: loginType === 'APP' ? 24 * 60 * 60 * 30 : 5 * 60 * 60,
+			});
 			const existingSessions = await env.sessionKV.get(`user:${user.id}:sessions`);
 			let sessionList: UserSession[] = existingSessions ? JSON.parse(existingSessions) : [];
 			sessionList = cleanupExpiredSessions(sessionList);
 			sessionList.push(userSessionData);
 			await env.sessionKV.put(`user:${user.id}:sessions`, JSON.stringify(sessionList));
-			sessionId = await encryptSessionId(sessionId);
+			sessionId = await encryptToken(sessionId);
 			return ctx.json({ sessionId: sessionId, userId: user.id }, 200);
 		} catch (error: any) {
 			console.error('Error Login Google account', error);
