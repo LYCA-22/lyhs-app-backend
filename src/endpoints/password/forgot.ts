@@ -159,13 +159,13 @@ export class forgotPassword extends OpenAPIRoute {
 					            max-width: 600px;
 					            margin: 20px auto;
 					            background-color: #ffffff;
-					            border-radius: 8px;
+					            border-radius: 15px;
 					            overflow: hidden;
 					            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 					        }
 
 					        .header {
-					            background-color: #3B82F6;
+					            background-color: #1E9BDE;
 					            padding: 20px;
 					            text-align: center;
 					        }
@@ -184,19 +184,19 @@ export class forgotPassword extends OpenAPIRoute {
 
 					        .reset-button {
 					            display: inline-block;
-					            background-color: #3B82F6;
+					            background-color: #1E9BDE;
 					            color: #ffffff !important;
 					            text-decoration: none;
 					            font-weight: 600;
 					            padding: 12px 24px;
-					            border-radius: 6px;
+					            border-radius: 100px;
 					            margin: 20px 0;
 					            text-align: center;
 					        }
 
 					        .reset-link {
 					            word-break: break-all;
-					            color: #3B82F6;
+					            color: #1E9BDE;
 					            margin-bottom: 20px;
 					            display: block;
 					        }
@@ -229,7 +229,7 @@ export class forgotPassword extends OpenAPIRoute {
 
 					            <p>我們收到了您的密碼重設請求。請點擊下方按鈕重設您的密碼：</p>
 
-					            <a href="${resetUrl}" class="reset-button">重設密碼</a>
+					            <a href="${resetUrl}" class="reset-button">點我前往重設密碼</a>
 
 					            <p>如果上方按鈕無法點擊，請複製以下連結至瀏覽器：</p>
 
@@ -238,12 +238,14 @@ export class forgotPassword extends OpenAPIRoute {
 					            <p>此連結將在24小時後失效。若您未曾請求重設密碼，請忽略此郵件，您的帳戶安全不會受到影響。</p>
 
 					            <p>如有任何問題，請聯繫我們的客服團隊。</p>
+											<p>Email: contact@lyhsca.org</p>
 
 					            <p>謝謝！</p>
 
 					            <p>LYHS+ 開發團隊敬上</p>
 
 					            <p class="note">【此郵件由系統自動發送，請勿回覆】</p>
+											<p class="note">LYHS+ 致力用科技改善你的校園生活 ｜ v1.5</p>
 					        </div>
 					        <div class="footer">
 					            <p>© 2025 LYHS+ 版權所有</p>

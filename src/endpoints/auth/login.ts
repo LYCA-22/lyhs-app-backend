@@ -36,12 +36,9 @@ export class userLogin extends OpenAPIRoute {
 						schema: {
 							type: 'object',
 							properties: {
-								sessionId: { type: 'string' },
 								user: { type: 'string' },
 							},
-							required: ['sessionId', 'user'],
 							example: {
-								sessionId: '1234567890',
 								userId: 'user123',
 							},
 						},
@@ -162,7 +159,19 @@ export class userLogin extends OpenAPIRoute {
 			sessionList.push(userSessionData);
 			await env.sessionKV.put(`user:${user.id}:sessions`, JSON.stringify(sessionList));
 			sessionId = await encryptToken(sessionId);
-			return ctx.json({ sessionId: sessionId, userId: user.id }, 200);
+
+			const cookieOptions = [
+				`sessionId=${sessionId}`,
+				'HttpOnly',
+				'Secure',
+				'SameSite=Strict',
+				`Max-Age=${loginType === 'APP' ? 24 * 60 * 60 * 30 : 5 * 60 * 60}`,
+				'Path=/',
+				'domain=lyhsca.org',
+			];
+
+			ctx.header('Set-Cookie', cookieOptions.join('; '));
+			return ctx.json({ userId: user.id }, 200);
 		} catch (error) {
 			if (error instanceof Error) {
 				console.error('Error during login:', error);
