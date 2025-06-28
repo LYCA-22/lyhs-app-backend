@@ -7,6 +7,7 @@ import { listCode } from './staff/listCode';
 import { verifyCode } from './staff/verifyCode';
 import { addStaff } from './staff/addStaff';
 import { DeleteUser } from './deleteUser';
+import { deleteStaffCode } from './staff/deleteCode';
 
 export function registerUserRoute(): AppRouter {
 	const router = createRouter();
@@ -18,5 +19,6 @@ export function registerUserRoute(): AppRouter {
 	router.put('/staff/code/create', createStaffCode);
 	router.post('/staff/add', addStaff);
 	router.delete('/', DeleteUser);
+	router.delete('/staff/code', deleteStaffCode);
 	return router;
 }

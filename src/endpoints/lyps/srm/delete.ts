@@ -91,7 +91,7 @@ export class deleteProject extends OpenAPIRoute {
 		}
 
 		try {
-			const code = ctx.req.param('code');
+			const code = ctx.req.query('code');
 			if (!code) {
 				return ctx.json({ error: 'Code is missing' }, 400);
 			}
