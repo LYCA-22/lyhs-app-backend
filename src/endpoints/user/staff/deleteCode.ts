@@ -1,6 +1,8 @@
 import { OpenAPIRoute, OpenAPIRouteSchema } from 'chanfana';
 import { AppContext } from '../../..';
 import { verifySession } from '../../../utils/verifySession';
+import { errorHandler, KnownErrorCode } from '../../../utils/error';
+import { withErrorHandler, ValidationHelper, AuthorizationHelper, DatabaseHelper, BusinessLogicHelper } from '../../../utils/errorHandler';
 
 export class deleteStaffCode extends OpenAPIRoute {
 	schema: OpenAPIRouteSchema = {
@@ -11,26 +13,18 @@ export class deleteStaffCode extends OpenAPIRoute {
 				sessionId: [],
 			},
 		],
-		requestBody: {
-			content: {
-				'application/json': {
-					schema: {
-						type: 'object',
-						properties: {
-							vuli: {
-								type: 'boolean',
-								example: true,
-							},
-							level: {
-								type: 'string',
-								example: 'L1',
-							},
-						},
-						required: ['vuli', 'level'],
-					},
+		parameters: [
+			{
+				name: 'code',
+				in: 'query',
+				required: true,
+				schema: {
+					type: 'string',
+					example: 'ABC123',
 				},
+				description: '要刪除的註冊代碼',
 			},
-		},
+		],
 		responses: {
 			'200': {
 				description: '成功刪除管理人員註冊代碼',
@@ -39,7 +33,11 @@ export class deleteStaffCode extends OpenAPIRoute {
 						schema: {
 							type: 'object',
 							properties: {
-								code: {
+								message: {
+									type: 'string',
+									example: '註冊代碼已成功刪除',
+								},
+								deletedCode: {
 									type: 'string',
 									example: 'ABC123',
 								},
@@ -56,8 +54,17 @@ export class deleteStaffCode extends OpenAPIRoute {
 							type: 'object',
 							properties: {
 								error: {
-									type: 'string',
-									example: 'Invalid level or information',
+									type: 'object',
+									properties: {
+										code: {
+											type: 'string',
+											example: 'L4000',
+										},
+										message: {
+											type: 'string',
+											example: '缺少必填欄位',
+										},
+									},
 								},
 							},
 						},
@@ -72,8 +79,17 @@ export class deleteStaffCode extends OpenAPIRoute {
 							type: 'object',
 							properties: {
 								error: {
-									type: 'string',
-									example: 'Unauthorized',
+									type: 'object',
+									properties: {
+										code: {
+											type: 'string',
+											example: 'L3003',
+										},
+										message: {
+											type: 'string',
+											example: '需要管理員權限',
+										},
+									},
 								},
 							},
 						},
@@ -81,15 +97,24 @@ export class deleteStaffCode extends OpenAPIRoute {
 				},
 			},
 			'404': {
-				description: '請求帳號不存在',
+				description: '使用者或註冊代碼不存在',
 				content: {
 					'application/json': {
 						schema: {
 							type: 'object',
 							properties: {
 								error: {
-									type: 'string',
-									example: 'User not found',
+									type: 'object',
+									properties: {
+										code: {
+											type: 'string',
+											example: 'L2001',
+										},
+										message: {
+											type: 'string',
+											example: '找不到使用者',
+										},
+									},
 								},
 							},
 						},
@@ -104,8 +129,17 @@ export class deleteStaffCode extends OpenAPIRoute {
 							type: 'object',
 							properties: {
 								error: {
-									type: 'string',
-									example: 'Internal server error',
+									type: 'object',
+									properties: {
+										code: {
+											type: 'string',
+											example: 'L1001',
+										},
+										message: {
+											type: 'string',
+											example: '內部伺服器錯誤',
+										},
+									},
 								},
 							},
 						},
@@ -116,54 +150,67 @@ export class deleteStaffCode extends OpenAPIRoute {
 	};
 
 	async handle(ctx: AppContext) {
-		const code = ctx.req.query('code');
-		const env = ctx.env;
+		return withErrorHandler(async (ctx: AppContext) => {
+			const codeToDelete = ctx.req.query('code');
+			const env = ctx.env;
 
-		try {
+			// 驗證必填參數
+			if (!codeToDelete) {
+				throw new errorHandler(KnownErrorCode.MISSING_REQUIRED_FIELDS, {
+					missingFields: ['code'],
+				});
+			}
+
+			// 驗證會話
 			const result = await verifySession(ctx);
 			if (result instanceof Response) {
-				return result;
-			}
-			const userData = await env.DATABASE.prepare(`SELECT level, email FROM accountData WHERE id = ?`)
-				.bind(result)
-				.first<{ level: string; email: string }>();
-
-			if (!userData) {
-				return ctx.json({ error: 'User not found' }, 404);
+				throw new errorHandler(KnownErrorCode.SESSION_EXPIRED);
 			}
 
-			const { level } = userData;
+			// 獲取使用者資料
+			const userData = await DatabaseHelper.executeQuery(
+				env.DATABASE.prepare(`SELECT level, email FROM accountData WHERE id = ?`).bind(result).first<{ level: string; email: string }>(),
+				KnownErrorCode.USER_NOT_FOUND,
+			);
 
-			if (level !== 'A1') {
-				console.error('Unauthorized access attempt');
-				return ctx.json({ error: 'Forbidden' }, 403);
-			}
+			// 驗證使用者存在
+			AuthorizationHelper.requireUser(userData);
+
+			// 驗證管理員權限
+			AuthorizationHelper.requireAdmin(userData!.level);
 
 			// 檢查註冊代碼是否存在
-			const existingCode = await env.DATABASE.prepare(`SELECT registerCode FROM register_codes WHERE registerCode = ?`)
-				.bind(code)
-				.first<{ registerCode: string }>();
+			const existingCode = await DatabaseHelper.executeQuery(
+				env.DATABASE.prepare(`SELECT registerCode FROM register_codes WHERE registerCode = ?`)
+					.bind(codeToDelete)
+					.first<{ registerCode: string }>(),
+				KnownErrorCode.REGISTRATION_CODE_NOT_FOUND,
+			);
 
-			if (!existingCode) {
-				return ctx.json({ error: 'Registration code not found' }, 404);
-			}
+			// 驗證註冊代碼存在
+			BusinessLogicHelper.validateRegistrationCode(existingCode);
 
 			// 刪除註冊代碼
-			await env.DATABASE.prepare(`DELETE FROM register_codes WHERE registerCode = ?`).bind(code).run();
+			const deleteResult = await DatabaseHelper.executeQuery(
+				env.DATABASE.prepare(`DELETE FROM register_codes WHERE registerCode = ?`).bind(codeToDelete).run(),
+			);
+
+			// 檢查刪除是否成功
+			if ('changes' in deleteResult && deleteResult.changes === 0) {
+				throw new errorHandler(KnownErrorCode.DATABASE_QUERY_FAILED, {
+					operation: 'delete',
+					table: 'register_codes',
+					code: codeToDelete,
+				});
+			}
+
 			return ctx.json(
 				{
 					message: '註冊代碼已成功刪除',
-					deletedCode: code,
+					deletedCode: codeToDelete,
 				},
 				200,
 			);
-		} catch (e) {
-			if (e instanceof Error) {
-				console.error('Error creating code:', e);
-				return ctx.json({ error: e.message }, 500);
-			}
-			console.error('Unexpected error:', e);
-			return ctx.json({ error: 'Internal server error' }, 500);
-		}
+		})(ctx);
 	}
 }
