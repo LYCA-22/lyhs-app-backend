@@ -1,6 +1,37 @@
 // 用戶資料設定，用於登入以及註冊
 export interface userData {
 	code?: string;
+	id?: string;
+	email: string;
+	password: string;
+	name: string;
+	type?: 'faculty' | 'staff' | 'stu';
+	level?: string;
+	Class: string;
+	grade: string;
+	role?: RoleKey[];
+	roleName?: UserRole[];
+	oauth?: string[];
+	auth_person?: string;
+}
+
+export enum UserRole {
+	R1 = 'President',
+	R2 = 'Vice_President',
+	R3 = 'Student_right',
+	R4 = 'Activity',
+	R5 = 'Design',
+	R6 = 'Technician',
+	R7 = 'Finance',
+	R8 = 'Equipment',
+}
+
+export type RoleKey = keyof typeof UserRole;
+
+// 數據庫返回的原始用戶資料（role 是字符串）
+export interface userDataRaw {
+	id?: string;
+	code?: string;
 	email: string;
 	password: string;
 	name: string;
@@ -9,6 +40,8 @@ export interface userData {
 	Class: string;
 	grade: string;
 	role?: string;
+	auth_person?: string;
+	oauth?: string;
 }
 
 // 用戶登入資料

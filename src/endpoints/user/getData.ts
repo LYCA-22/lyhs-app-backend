@@ -1,8 +1,7 @@
 import { OpenAPIRoute, OpenAPIRouteSchema } from 'chanfana';
 import { AppContext } from '../..';
-import { userData } from '../../types';
 import { verifySession } from '../../utils/verifySession';
-import { getUserInfo } from '../../utils/getUserData';
+import { getUserById } from '../../utils/getUserData';
 
 export class getUserData extends OpenAPIRoute {
 	schema: OpenAPIRouteSchema = {
@@ -115,11 +114,7 @@ export class getUserData extends OpenAPIRoute {
 				return result;
 			}
 			const userId = result as string;
-
-			const userData = await getUserInfo(userId, ctx);
-			if (userData instanceof Response) {
-				return userData;
-			}
+			const userData = await getUserById(userId, ctx);
 
 			return ctx.json({ data: userData }, 200);
 		} catch (error) {

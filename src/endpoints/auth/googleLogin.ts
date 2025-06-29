@@ -1,10 +1,12 @@
 import { AppContext } from '../..';
 import { parseUserAgent } from '.';
-import { TokenResponse, UserInfo, UserSession } from '../../types';
+import { TokenResponse, userData, UserInfo, UserSession } from '../../types';
 import { getIPv6Prefix } from '../../utils/getIPv6Prefix';
 import { cleanupExpiredSessions } from '../../utils/cleanSessions';
 import { OpenAPIRoute, OpenAPIRouteSchema } from 'chanfana';
 import { encryptToken } from '../../utils/hashSessionId';
+import { setCookie } from 'hono/cookie';
+import { getUserByEmail } from '../../utils/getUserData';
 
 export class googleLogin extends OpenAPIRoute {
 	schema: OpenAPIRouteSchema = {
@@ -148,10 +150,7 @@ export class googleLogin extends OpenAPIRoute {
 
 			const userInfo = await userInfoResponse.json();
 			const { email } = userInfo as UserInfo;
-			const user = await env.DATABASE.prepare('SELECT * FROM accountData WHERE email = ?').bind(email).first();
-			if (!user) {
-				return ctx.json({ error: 'User not found' }, 404);
-			}
+			const user = (await getUserByEmail(email, ctx)) as userData;
 			let sessionId = crypto.randomUUID();
 			const loginTime = new Date(Date.now()).toISOString();
 			const expirationTime = new Date(Date.now() + 12 * 60 * 60).toISOString();
@@ -183,18 +182,25 @@ export class googleLogin extends OpenAPIRoute {
 			await env.sessionKV.put(`user:${user.id}:sessions`, JSON.stringify(sessionList));
 			sessionId = await encryptToken(sessionId);
 
-			const cookieOptions = [
-				`sessionId=${sessionId}`,
-				'HttpOnly',
-				'Secure',
-				'SameSite=Strict',
-				`Max-Age=${loginType === 'APP' ? 24 * 60 * 60 * 30 : 5 * 60 * 60}`,
-				'Path=/',
-				'domain=lyhsca.org',
-			];
+			setCookie(ctx, 'sessionId', sessionId, {
+				maxAge: loginType === 'APP' ? 24 * 60 * 60 * 30 : 5 * 60 * 60,
+				path: '/',
+				domain: 'lyhsca.org',
+				httpOnly: false,
+				secure: true,
+			});
 
-			ctx.header('Set-Cookie', cookieOptions.join('; '));
-			return ctx.json({ userId: user.id }, 200);
+			setCookie(ctx, 'lyps_userId', user.id as string, {
+				maxAge: 86400,
+				path: '/',
+				sameSite: 'Strict',
+				domain: 'lyhsca.org',
+				httpOnly: false,
+				secure: true,
+			});
+
+			ctx.header('Access-Control-Allow-Credentials', 'true');
+			return ctx.json({ message: 'Login successful' }, 200);
 		} catch (error: any) {
 			console.error('Error Login Google account', error);
 			return ctx.json({ error: error }, 500);

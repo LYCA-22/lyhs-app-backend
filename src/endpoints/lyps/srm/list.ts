@@ -2,7 +2,7 @@ import { AppContext } from '../../..';
 import { verifySession } from '../../../utils/verifySession';
 import { studentData } from '../../../types';
 import { OpenAPIRoute, OpenAPIRouteSchema } from 'chanfana';
-import { getUserInfo } from '../../../utils/getUserData';
+import { getUserById } from '../../../utils/getUserData';
 
 export class getProjectList extends OpenAPIRoute {
 	schema: OpenAPIRouteSchema = {
@@ -88,7 +88,7 @@ export class getProjectList extends OpenAPIRoute {
 			}
 			const userId = result;
 
-			const results = await getUserInfo(userId, ctx);
+			const results = await getUserById(userId as string, ctx);
 			if (results instanceof Response) {
 				return results;
 			}

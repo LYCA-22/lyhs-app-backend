@@ -1,7 +1,7 @@
 import { OpenAPIRoute, OpenAPIRouteSchema } from 'chanfana';
 import { AppContext } from '../../..';
 import { verifySession } from '../../../utils/verifySession';
-import { getUserInfo } from '../../../utils/getUserData';
+import { getUserById } from '../../../utils/getUserData';
 
 export class updatePcs extends OpenAPIRoute {
 	schema: OpenAPIRouteSchema = {
@@ -52,11 +52,8 @@ export class updatePcs extends OpenAPIRoute {
 			}
 
 			const userId = await verifySession(ctx);
-			if (userId instanceof Response) {
-				return userId;
-			}
 
-			const userData = await getUserInfo(userId, ctx);
+			const userData = await getUserById(userId as string, ctx);
 			if (userData instanceof Response) {
 				return userData;
 			}

@@ -1,6 +1,6 @@
 import { Context } from 'hono';
 import { AppContext } from '..';
-import { errorHandler, KnownErrorCode, handleUnknownError, isErrorHandler } from './error';
+import { errorHandler, KnownErrorCode, handleUnknownError, isErrorHandler, httpReturn } from './error';
 
 /**
  * Global error handler for LYHS Plus application
@@ -39,11 +39,11 @@ export class ValidationHelper {
 	/**
 	 * Validate required fields
 	 */
-	static validateRequiredFields(data: Record<string, any>, requiredFields: string[]): void {
+	static validateRequiredFields(data: Record<string, any>, requiredFields: string[], ctx: AppContext) {
 		const missingFields = requiredFields.filter((field) => data[field] === undefined || data[field] === null || data[field] === '');
 
 		if (missingFields.length > 0) {
-			throw new errorHandler(KnownErrorCode.MISSING_REQUIRED_FIELDS, {
+			return httpReturn(ctx, KnownErrorCode.MISSING_REQUIRED_FIELDS, {
 				missingFields,
 			});
 		}
@@ -52,42 +52,31 @@ export class ValidationHelper {
 	/**
 	 * Validate email format
 	 */
-	static validateEmail(email: string): void {
+	static validateEmail(email: string, ctx: AppContext) {
 		const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 		if (!emailRegex.test(email)) {
-			throw new errorHandler(KnownErrorCode.INVALID_EMAIL_FORMAT, { email });
-		}
-	}
-
-	/**
-	 * Validate student ID format
-	 */
-	static validateStudentId(studentId: string): void {
-		// Assuming student ID should be 6 digits
-		const studentIdRegex = /^\d{6}$/;
-		if (!studentIdRegex.test(studentId)) {
-			throw new errorHandler(KnownErrorCode.INVALID_STUDENT_ID, { studentId });
+			return httpReturn(ctx, KnownErrorCode.INVALID_EMAIL_FORMAT, { email });
 		}
 	}
 
 	/**
 	 * Validate class format
 	 */
-	static validateClass(classValue: string): void {
+	static validateClass(classValue: string, ctx: AppContext) {
 		// Assuming class format like "101", "201", etc.
 		const classRegex = /^[1-3]\d{2}$/;
 		if (!classRegex.test(classValue)) {
-			throw new errorHandler(KnownErrorCode.INVALID_CLASS_FORMAT, { class: classValue });
+			return httpReturn(ctx, KnownErrorCode.INVALID_CLASS_FORMAT, { class: classValue });
 		}
 	}
 
 	/**
 	 * Validate level value
 	 */
-	static validateLevel(level: string): void {
+	static validateLevel(level: string, ctx: AppContext) {
 		const validLevels = ['A1', 'L1', 'L2', 'L3', 'S1', 'S2', 'S3'];
 		if (!validLevels.includes(level)) {
-			throw new errorHandler(KnownErrorCode.INVALID_LEVEL_VALUE, {
+			return httpReturn(ctx, KnownErrorCode.INVALID_LEVEL_VALUE, {
 				level,
 				validLevels,
 			});

@@ -1,5 +1,6 @@
 import { AppContext } from '..';
 import { sessionKVData } from '../types';
+import { httpReturn, KnownErrorCode } from './error';
 import { getIPv6Prefix } from './getIPv6Prefix';
 import { decryptToken } from './hashSessionId';
 
@@ -10,12 +11,11 @@ export async function verifySession(ctx: AppContext): Promise<String | Response>
 
 	// 若沒有 token 或格式錯誤，回傳400錯誤
 	if (!sessionId || !type) {
-		console.error('SessionId or Login-Type is missing or malformed');
-		return ctx.json({ error: 'Token or Login-Type is missing or malformed' }, 400);
+		return httpReturn(ctx, KnownErrorCode.MISSING_REQUIRED_FIELDS, {});
 	}
 
 	if (type !== 'WEB' && type !== 'APP') {
-		return ctx.json({ error: 'Invalid Login-Type' }, 400);
+		return httpReturn(ctx, KnownErrorCode.INVALID_LOGIN_TYPE);
 	}
 
 	try {
@@ -27,25 +27,31 @@ export async function verifySession(ctx: AppContext): Promise<String | Response>
 
 		if (!sessionData) {
 			console.log('Session not found');
-			return ctx.json({ error: 'Invalid or expired token' }, 401);
+			return httpReturn(ctx, KnownErrorCode.SESSION_NOT_FOUND);
 		}
 
 		if (sessionData.ip !== getIPv6Prefix(currentIp)) {
 			console.error('IP address mismatch');
-			return ctx.json({ error: 'Session IP mismatch' }, 401);
+			return httpReturn(ctx, KnownErrorCode.SESSION_IP_MISMATCH);
 		}
 
 		if (!sessionData.userId) {
 			console.error('Malformed session data: missing userId');
-			return ctx.json({ error: 'Malformed session data' }, 400);
+			return httpReturn(ctx, KnownErrorCode.MALFORMED_SESSION_DATA);
 		}
 
 		return sessionData.userId;
 	} catch (error) {
 		if (error instanceof Error) {
 			console.error('Error verifying session:', error.message);
-			return ctx.json({ error: `Error verifying session: ${error.message}` }, 500);
+			return httpReturn(ctx, KnownErrorCode.INTERNAL_SERVER_ERROR, {
+				originalError: error.message,
+				context: 'session verification',
+			});
 		}
-		return ctx.json({ error: 'Unknown error while verifying session' }, 500);
+		return httpReturn(ctx, KnownErrorCode.INTERNAL_SERVER_ERROR, {
+			originalError: error,
+			context: 'session verification',
+		});
 	}
 }

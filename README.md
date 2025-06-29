@@ -514,12 +514,12 @@ docs(readme): update API documentation
 ## 📞 聯絡資訊
 
 - **專案維護**: LYHS 開發團隊
-- **技術支援**: support@lyhsca.org
-- **問題回報**: [GitHub Issues](https://github.com/your-org/lyhs-app-backend/issues)
+- **技術支援**: contact@lyhsca.org
+- **問題回報**: [GitHub Issues](https://github.com/LYCA-22/lyhs-app-backend/issues)
 
 ---
 
 <div align="center">
   <p>Made with ❤️ by LYHS Development Team</p>
-  <p>© 2024 綠柳高中. All rights reserved.</p>
+  <p>© 2024 - 2025 LYHS Plus. All rights reserved.</p>
 </div>

@@ -7,6 +7,7 @@ import { OpenAPIRoute, OpenAPIRouteSchema } from 'chanfana';
 import { encryptToken } from '../../utils/hashSessionId';
 import { cleanupExpiredSessions } from '../../utils/cleanSessions';
 import { setCookie } from 'hono/cookie';
+import { httpReturn, KnownErrorCode } from '../../utils/error';
 
 export class userLogin extends OpenAPIRoute {
 	schema: OpenAPIRouteSchema = {
@@ -109,23 +110,25 @@ export class userLogin extends OpenAPIRoute {
 		const clientIp = ctx.req.header('CF-Connecting-IP') || ctx.req.header('X-Forwarded-For') || ctx.req.header('X-Real-IP') || 'unknown';
 
 		if (!password || !email || !loginType) {
-			return ctx.json({ error: 'Require data is missing' }, 400);
+			return httpReturn(ctx, KnownErrorCode.MISSING_REQUIRED_FIELDS, {
+				missingFields: [!email && 'email', !password && 'password', !loginType && 'loginType'].filter(Boolean),
+			});
 		}
 
 		if (loginType != 'APP' && loginType != 'WEB') {
-			return ctx.json({ error: 'Invalid login type' }, 400);
+			return httpReturn(ctx, KnownErrorCode.INVALID_LOGIN_TYPE);
 		}
 
 		try {
 			const user = await env.DATABASE.prepare('SELECT * FROM accountData WHERE email = ?').bind(email).first();
 			if (!user) {
-				return ctx.json({ error: 'User not found' }, 404);
+				return httpReturn(ctx, KnownErrorCode.USER_NOT_FOUND);
 			}
 
 			const userData = user as unknown as userData;
 			const isPasswordValid = await verifyPassword(password, userData.password);
 			if (!isPasswordValid) {
-				return ctx.json({ error: 'Invalid password' }, 401);
+				return httpReturn(ctx, KnownErrorCode.INVALID_PASSWORD);
 			}
 
 			let sessionId = crypto.randomUUID();
@@ -183,10 +186,15 @@ export class userLogin extends OpenAPIRoute {
 		} catch (error) {
 			if (error instanceof Error) {
 				console.error('Error during login:', error);
-				return ctx.json({ error: `Error: ${error.message}` }, 500);
+				return httpReturn(ctx, KnownErrorCode.INTERNAL_SERVER_ERROR, {
+					originalError: error.message,
+					context: 'user login',
+				});
 			}
 			console.error('Unexpected error during login:', error);
-			return ctx.json({ error: 'Internal server error' }, 500);
+			return httpReturn(ctx, KnownErrorCode.UNKNOWN_ERROR, {
+				context: 'user login',
+			});
 		}
 	}
 }

@@ -2,6 +2,7 @@ import { OpenAPIRoute, OpenAPIRouteSchema } from 'chanfana';
 import { AppContext } from '../..';
 import type { UserSession } from '../../types';
 import { verifySession } from '../../utils/verifySession';
+import { httpReturn, KnownErrorCode } from '../../utils/error';
 
 export class userLogout extends OpenAPIRoute {
 	schema: OpenAPIRouteSchema = {
@@ -71,7 +72,9 @@ export class userLogout extends OpenAPIRoute {
 
 			const sessionId = ctx.req.header('Session-Id');
 			if (!sessionId) {
-				return ctx.json({ error: 'Missing sessionId header' }, 400);
+				return httpReturn(ctx, KnownErrorCode.MISSING_REQUIRED_FIELDS, {
+					missingFields: ['Session-Id'],
+				});
 			}
 
 			await env.sessionKV.delete(`session:${sessionId}:data`);
@@ -91,10 +94,15 @@ export class userLogout extends OpenAPIRoute {
 		} catch (error) {
 			if (error instanceof Error) {
 				console.error('Error during logout:', error);
-				return ctx.json({ error: `Error: ${error.message}` }, 500);
+				return httpReturn(ctx, KnownErrorCode.INTERNAL_SERVER_ERROR, {
+					originalError: error.message,
+					context: 'user logout',
+				});
 			}
 			console.error('Error during logout:', error);
-			return ctx.json({ error: 'Internal server error' }, 500);
+			return httpReturn(ctx, KnownErrorCode.UNKNOWN_ERROR, {
+				context: 'user logout',
+			});
 		}
 	}
 }

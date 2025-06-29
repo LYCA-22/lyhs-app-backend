@@ -1,4 +1,5 @@
 import { ContentfulStatusCode } from 'hono/utils/http-status';
+import { AppContext } from '..';
 
 /**
  * Known error codes.
@@ -39,6 +40,8 @@ export enum KnownErrorCode {
 	INVALID_AUTH_TOKEN = 'L2010',
 	TOKEN_EXPIRED = 'L2011',
 	INVALID_LOGIN_TYPE = 'L2012',
+	SESSION_IP_MISMATCH = 'L2013',
+	MALFORMED_SESSION_DATA = 'L2014',
 
 	// Authorization errors (3000-3999)
 	FORBIDDEN = 'L3000',
@@ -143,6 +146,8 @@ export const ErrorMessages: Record<KnownErrorCode, string> = {
 	[KnownErrorCode.INVALID_AUTH_TOKEN]: '無效的驗證令牌',
 	[KnownErrorCode.TOKEN_EXPIRED]: '驗證令牌已過期',
 	[KnownErrorCode.INVALID_LOGIN_TYPE]: '無效的登入類型',
+	[KnownErrorCode.SESSION_IP_MISMATCH]: '登入IP位址不符',
+	[KnownErrorCode.MALFORMED_SESSION_DATA]: '會話資料格式錯誤',
 
 	// Authorization errors
 	[KnownErrorCode.FORBIDDEN]: '拒絕存取',
@@ -247,6 +252,8 @@ export const ErrorStatusCodes: Record<KnownErrorCode, ContentfulStatusCode> = {
 	[KnownErrorCode.INVALID_AUTH_TOKEN]: 401,
 	[KnownErrorCode.TOKEN_EXPIRED]: 401,
 	[KnownErrorCode.INVALID_LOGIN_TYPE]: 400,
+	[KnownErrorCode.SESSION_IP_MISMATCH]: 401,
+	[KnownErrorCode.MALFORMED_SESSION_DATA]: 400,
 
 	// Authorization errors - 403
 	[KnownErrorCode.FORBIDDEN]: 403,
@@ -365,6 +372,11 @@ export class errorHandler extends Error {
 			status: this.statusCode,
 		};
 	}
+}
+
+export function httpReturn(ctx: AppContext, code: KnownErrorCode, details?: any): Response {
+	const error = new errorHandler(code, details);
+	return ctx.json(error.toJSON(), error.statusCode);
 }
 
 /**
