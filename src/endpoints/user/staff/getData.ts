@@ -1,8 +1,8 @@
 import { OpenAPIRoute, OpenAPIRouteSchema } from 'chanfana';
-import { AppContext } from '../..';
-import { verifySession } from '../../utils/verifySession';
-import { getUserById } from '../../utils/getUserData';
-import { globalErrorHandler } from '../../utils/errorHandler';
+import { AppContext } from '../../..';
+import { verifySession } from '../../../utils/verifySession';
+import { getUserById } from '../../../utils/getUserData';
+import { globalErrorHandler } from '../../../utils/errorHandler';
 
 export class getUserData extends OpenAPIRoute {
 	schema: OpenAPIRouteSchema = {

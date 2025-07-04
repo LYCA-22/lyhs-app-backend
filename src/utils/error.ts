@@ -70,6 +70,7 @@ export enum KnownErrorCode {
 	INVALID_FILE_TYPE = 'L4014',
 	FILE_SIZE_TOO_LARGE = 'L4015',
 	INVALID_QUERY_PARAMETERS = 'L4016',
+	INVALID_STAFF_CODE = 'L4017',
 
 	// Business logic errors (5000-5999)
 	REGISTRATION_CODE_NOT_FOUND = 'L5000',
@@ -176,6 +177,7 @@ export const ErrorMessages: Record<KnownErrorCode, string> = {
 	[KnownErrorCode.INVALID_FILE_TYPE]: '檔案類型錯誤',
 	[KnownErrorCode.FILE_SIZE_TOO_LARGE]: '檔案大小超過限制',
 	[KnownErrorCode.INVALID_QUERY_PARAMETERS]: '查詢參數錯誤',
+	[KnownErrorCode.INVALID_STAFF_CODE]: '管理帳號註冊代碼錯誤',
 
 	// Business logic errors
 	[KnownErrorCode.REGISTRATION_CODE_NOT_FOUND]: '找不到註冊代碼',
@@ -282,6 +284,7 @@ export const ErrorStatusCodes: Record<KnownErrorCode, ContentfulStatusCode> = {
 	[KnownErrorCode.INVALID_FILE_TYPE]: 400,
 	[KnownErrorCode.FILE_SIZE_TOO_LARGE]: 413,
 	[KnownErrorCode.INVALID_QUERY_PARAMETERS]: 400,
+	[KnownErrorCode.INVALID_STAFF_CODE]: 400,
 
 	// Business logic errors - mix of 400/404/409
 	[KnownErrorCode.REGISTRATION_CODE_NOT_FOUND]: 404,

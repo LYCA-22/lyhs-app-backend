@@ -2,7 +2,8 @@ import { OpenAPIRoute, OpenAPIRouteSchema } from 'chanfana';
 import { AppContext } from '../..';
 import type { UserSession } from '../../types';
 import { verifySession } from '../../utils/verifySession';
-import { httpReturn, KnownErrorCode } from '../../utils/error';
+import { errorHandler, httpReturn, KnownErrorCode } from '../../utils/error';
+import { globalErrorHandler, ValidationHelper } from '../../utils/errorHandler';
 
 export class userLogout extends OpenAPIRoute {
 	schema: OpenAPIRouteSchema = {
@@ -66,20 +67,15 @@ export class userLogout extends OpenAPIRoute {
 		const env = ctx.env;
 		try {
 			const result = await verifySession(ctx);
-			if (result instanceof Response) {
-				return result;
-			}
 
-			const sessionId = ctx.req.header('Session-Id');
+			const sessionId = (ctx.req.header('Session-Id') as string as any) || '';
 			if (!sessionId) {
-				return httpReturn(ctx, KnownErrorCode.MISSING_REQUIRED_FIELDS, {
-					missingFields: ['Session-Id'],
-				});
+				throw new errorHandler(KnownErrorCode.MISSING_REQUIRED_FIELDS);
 			}
 
 			await env.sessionKV.delete(`session:${sessionId}:data`);
-
 			const existingSessions = await env.sessionKV.get(`user:${result}:sessions`);
+
 			if (existingSessions) {
 				let sessionList: UserSession[] = JSON.parse(existingSessions);
 				sessionList = sessionList.filter((session) => session.sessionId !== sessionId);
@@ -92,17 +88,7 @@ export class userLogout extends OpenAPIRoute {
 
 			return ctx.json({ message: 'Logout successful' }, 200);
 		} catch (error) {
-			if (error instanceof Error) {
-				console.error('Error during logout:', error);
-				return httpReturn(ctx, KnownErrorCode.INTERNAL_SERVER_ERROR, {
-					originalError: error.message,
-					context: 'user logout',
-				});
-			}
-			console.error('Error during logout:', error);
-			return httpReturn(ctx, KnownErrorCode.UNKNOWN_ERROR, {
-				context: 'user logout',
-			});
+			return globalErrorHandler(error as Error, ctx);
 		}
 	}
 }

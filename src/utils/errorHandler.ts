@@ -39,11 +39,11 @@ export class ValidationHelper {
 	/**
 	 * Validate required fields
 	 */
-	static validateRequiredFields(data: Record<string, any>, requiredFields: string[], ctx: AppContext) {
+	static validateRequiredFields(data: Record<string, any>, requiredFields: string[]) {
 		const missingFields = requiredFields.filter((field) => data[field] === undefined || data[field] === null || data[field] === '');
 
 		if (missingFields.length > 0) {
-			return httpReturn(ctx, KnownErrorCode.MISSING_REQUIRED_FIELDS, {
+			throw new errorHandler(KnownErrorCode.MISSING_REQUIRED_FIELDS, {
 				missingFields,
 			});
 		}

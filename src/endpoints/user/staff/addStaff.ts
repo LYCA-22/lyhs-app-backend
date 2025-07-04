@@ -2,6 +2,8 @@ import { OpenAPIRoute, OpenAPIRouteSchema } from 'chanfana';
 import { codeData, userData } from '../../../types';
 import { AppContext } from '../../..';
 import { hashPassword } from '../../../utils/hashPsw';
+import { globalErrorHandler } from '../../../utils/errorHandler';
+import { errorHandler, KnownErrorCode } from '../../../utils/error';
 
 export class addStaff extends OpenAPIRoute {
 	schema: OpenAPIRouteSchema = {
@@ -108,36 +110,29 @@ export class addStaff extends OpenAPIRoute {
 
 		try {
 			const body = await ctx.req.json();
-			const { code, email, name, password, Class, grade, role, category } = body;
+			const { code, email, name, password, Class, grade, role } = body;
 
 			if (!code) {
-				return ctx.json({ error: 'Code is required' }, 400);
+				throw new errorHandler(KnownErrorCode.MISSING_REQUIRED_FIELDS);
 			}
 
 			const codeData = await env.DATABASE.prepare(`SELECT * FROM register_codes WHERE registerCode = ?`)
 				.bind(code)
 				.first<codeData | null>();
+
 			if (!codeData) {
-				return ctx.json({ error: 'Invalid code' }, 404);
+				throw new errorHandler(KnownErrorCode.INVALID_STAFF_CODE);
 			}
 
 			const existingUser = await env.DATABASE.prepare('SELECT * FROM accountData WHERE email = ?').bind(email).first();
 			if (existingUser) {
-				return ctx.json({ error: 'The email already exists' }, 409);
+				throw new errorHandler(KnownErrorCode.USER_ALREADY_EXISTS);
 			}
 
 			const hashedPassword = await hashPassword(password);
 			const userId = crypto.randomUUID();
 			const auth_person = codeData.createUserEmail;
-			let type = '';
-
-			if (category === 'staff') {
-				type = 'staff';
-			} else if (category === 'faculty') {
-				type = 'faculty';
-			} else {
-				return ctx.json({ error: 'Invalid category' }, 400);
-			}
+			let type = 'staff';
 
 			await env.DATABASE.prepare(
 				`
@@ -154,14 +149,10 @@ export class addStaff extends OpenAPIRoute {
 			} else {
 				await env.DATABASE.prepare(`DELETE FROM register_codes WHERE registerCode = ?`).bind(code).run();
 			}
+
 			return ctx.json({ message: 'User registered successfully' }, 200);
 		} catch (error) {
-			if (error instanceof Error) {
-				console.error('Error in addStaff', error.message);
-				return ctx.json({ error: `Error in addStaff ${error.message}` }, 500);
-			}
-			console.error(error);
-			return ctx.json({ error: 'Internal server error' }, 500);
+			return globalErrorHandler(error as Error, ctx);
 		}
 	}
 }

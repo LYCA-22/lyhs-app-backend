@@ -8,7 +8,7 @@ interface img {
 	src: string;
 }
 
-function getSetCookieHeaders(headers: Headers): string[] {
+export function getSetCookieHeaders(headers: Headers): string[] {
 	const cookies: string[] = [];
 	headers.forEach((value, key) => {
 		if (key.toLowerCase() === 'set-cookie') {

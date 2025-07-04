@@ -1,6 +1,7 @@
 import { OpenAPIRoute, OpenAPIRouteSchema } from 'chanfana';
 import { AppContext } from '../..';
 import { verifySession } from '../../utils/verifySession';
+import { globalErrorHandler } from '../../utils/errorHandler';
 
 export class getUserNum extends OpenAPIRoute {
 	schema: OpenAPIRouteSchema = {
@@ -56,19 +57,11 @@ export class getUserNum extends OpenAPIRoute {
 		const env = ctx.env;
 
 		try {
-			const result = await verifySession(ctx);
-			if (result instanceof Response) {
-				return result;
-			}
+			await verifySession(ctx);
 			const userNum = await env.DATABASE.prepare('SELECT COUNT(*) FROM accountData').first();
 			return ctx.json({ data: userNum }, 200);
 		} catch (error) {
-			if (error instanceof Error) {
-				console.error(error.message);
-				return ctx.json({ error: `Error in getUserNum: ${error.message}` }, 500);
-			}
-			console.error(error);
-			return ctx.json({ error: 'Internal Server Error' }, 500);
+			return globalErrorHandler(error as Error, ctx);
 		}
 	}
 }
