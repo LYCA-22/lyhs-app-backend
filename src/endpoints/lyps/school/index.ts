@@ -6,6 +6,7 @@ import { getValidateImg } from './getValidateImg';
 import { getYearData } from './getYearData';
 import { OpenIdLogin } from './openid';
 import { getAllSeme } from './getAllseme';
+import { getAbsence } from './getAbsence';
 
 export function registerSchoolRoutes() {
 	const router = createRouter();
@@ -16,5 +17,6 @@ export function registerSchoolRoutes() {
 	router.post('/year', getYearData);
 	router.post('/score', getScore);
 	router.post('/openid', OpenIdLogin);
+	router.post('/absence', getAbsence);
 	return router;
 }

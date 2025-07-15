@@ -17,7 +17,6 @@ openapi
 	.use(
 		cors({
 			origin: [
-				'http://localhost:3000',
 				'https://chat.lyhsca.org',
 				'https://admin.lyhsca.org',
 				'https://auth.lyhsca.org',
