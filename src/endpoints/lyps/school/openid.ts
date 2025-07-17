@@ -37,9 +37,22 @@ export class OpenIdLogin extends OpenAPIRoute {
 			});
 			const location = getOpenIdUrl.headers.get('location');
 			const infos = getSetCookieHeaders(getOpenIdUrl.headers);
+			if (!infos || infos.length < 2) {
+				throw new errorHandler(KnownErrorCode.INVALID_SCHOOL_SESSION, 'Missing required cookies');
+			}
 			const cookieString = infos.map((c) => c.split(';')[0]).join('; ');
-			const JSEESIONID = cookieString.split('; ')[0].split('=')[1];
-			const SRV = cookieString.split('; ')[1].split('=')[1];
+
+			const cookieParts = cookieString.split('; ');
+			if (cookieParts.length < 2) {
+				throw new errorHandler(KnownErrorCode.INVALID_SCHOOL_SESSION, 'Cookie string does not contain expected parts');
+			}
+
+			const JSEESIONID = cookieParts[0]?.split('=')[1];
+			const SRV = cookieParts[1]?.split('=')[1];
+
+			if (!JSEESIONID || !SRV) {
+				throw new errorHandler(KnownErrorCode.INVALID_SCHOOL_SESSION, 'Failed to extract JSEESIONID or SRV');
+			}
 
 			const getOpenIdCookies = await fetch(`https://${location?.split(':')[1]}`, {
 				method: 'POST',
@@ -92,6 +105,7 @@ export class OpenIdLogin extends OpenAPIRoute {
 			});
 
 			const html = await getHtml.text();
+			console.log(html);
 			const match = html.match(/<input[^>]*name=["']session_key["'][^>]*value=["']([^"']+)["']/);
 			const sessionKey = match?.[1];
 			if (!sessionKey) {
