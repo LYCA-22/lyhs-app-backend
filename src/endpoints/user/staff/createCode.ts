@@ -157,24 +157,14 @@ export class createStaffCode extends OpenAPIRoute {
 				vuli: vuli,
 				level: new_level,
 				user_number: vuli ? 10 : 1,
-				createdTime: new Date().toISOString(),
 				registerCode: code,
 			};
-			const id = crypto.randomUUID();
 
 			await env.DATABASE.prepare(
-				`INSERT INTO register_codes (createUserId, createUserEmail, vuli, level, user_number, createdTime, registerCode)
-				VALUES (?, ?, ?, ?, ?, ?, ?)`,
+				`INSERT INTO register_codes (created_userId, created_email, vuli, level, number, code)
+				VALUES (?, ?, ?, ?, ?, ?)`,
 			)
-				.bind(
-					codeData.createUserId,
-					codeData.createUserEmail,
-					codeData.vuli,
-					codeData.level,
-					codeData.user_number,
-					codeData.createdTime,
-					codeData.registerCode,
-				)
+				.bind(codeData.createUserId, codeData.createUserEmail, codeData.vuli, codeData.level, codeData.user_number, codeData.registerCode)
 				.run();
 			return ctx.json({ code: code }, 200);
 		} catch (e) {

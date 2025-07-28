@@ -1,6 +1,8 @@
 import { OpenAPIRoute, OpenAPIRouteSchema } from 'chanfana';
 import { AppContext } from '../../..';
 import { Announcement } from '../../../types';
+import { checkService } from '../../../utils/checkService';
+import { globalErrorHandler } from '../../../utils/errorHandler';
 
 export class listAd extends OpenAPIRoute {
 	schema: OpenAPIRouteSchema = {
@@ -67,6 +69,8 @@ export class listAd extends OpenAPIRoute {
 
 	async handle(ctx: AppContext) {
 		try {
+			await checkService('fetch_school_news', ctx);
+
 			const baseUrl =
 				'https://www.ly.kh.edu.tw/view/index.php?WebID=336&MainType=101&SubType=0&MainMenuId=61299&SubMenuId=0&NowMainId=61299&NowSubId=0&page=';
 			const totalPages = 7;
@@ -92,12 +96,7 @@ export class listAd extends OpenAPIRoute {
 				return ctx.json({ error: 'No announcements found' }, 404);
 			}
 		} catch (error) {
-			if (error instanceof Error) {
-				console.error('Error fetching announcements:', error.message);
-				return ctx.json({ error: `Failed to fetch announcements: ${error.message}` }, 500);
-			}
-			console.error('Error fetching announcements:', error);
-			return ctx.json({ error: 'Internal server error' }, 500);
+			return globalErrorHandler(error as Error, ctx);
 		}
 	}
 }

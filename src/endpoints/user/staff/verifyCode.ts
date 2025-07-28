@@ -105,9 +105,7 @@ export class verifyCode extends OpenAPIRoute {
 			if (!code) {
 				return ctx.json({ error: 'Code cannot be empty' }, 400);
 			}
-			const codeData = await env.DATABASE.prepare(`SELECT * FROM register_codes WHERE registerCode = ?`)
-				.bind(code)
-				.first<codeData | null>();
+			const codeData = await env.DATABASE.prepare(`SELECT * FROM register_codes WHERE code = ?`).bind(code).first<codeData | null>();
 			if (!codeData) {
 				return ctx.json({ error: 'Invalid code' }, 404);
 			}

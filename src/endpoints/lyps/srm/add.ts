@@ -1,6 +1,8 @@
 import { OpenAPIRoute, OpenAPIRouteSchema } from 'chanfana';
 import { AppContext } from '../../..';
 import { studentData } from '../../../types';
+import { checkService } from '../../../utils/checkService';
+import { globalErrorHandler } from '../../../utils/errorHandler';
 
 export class addProject extends OpenAPIRoute {
 	schema: OpenAPIRouteSchema = {
@@ -102,14 +104,16 @@ export class addProject extends OpenAPIRoute {
 			return ctx.json({ error: 'Information missing' }, 400);
 		}
 
-		const code = Array.from(crypto.getRandomValues(new Uint8Array(6)))
-			.map((n) => n % 10)
-			.join('');
-		const projectId = crypto.randomUUID();
-		const createdTime = new Date().toISOString();
-		const updatedTime = createdTime;
-
 		try {
+			await checkService('stu_mail', ctx);
+
+			const code = Array.from(crypto.getRandomValues(new Uint8Array(6)))
+				.map((n) => n % 10)
+				.join('');
+			const projectId = crypto.randomUUID();
+			const createdTime = new Date().toISOString();
+			const updatedTime = createdTime;
+
 			const projectData = JSON.stringify({
 				id: projectId,
 				searchCode: code,
@@ -129,12 +133,7 @@ export class addProject extends OpenAPIRoute {
 			await env.mailKV.put(code, projectData);
 			return ctx.json({ code: code }, 201);
 		} catch (e) {
-			if (e instanceof Error) {
-				console.error('Error during add project:', e.message);
-				return ctx.json({ error: `Error: ${e.message}` }, 500);
-			}
-			console.error('Error during add project:', e);
-			return ctx.json({ error: `Unknown error during project addition` }, 500);
+			return globalErrorHandler(e as Error, ctx);
 		}
 	}
 }

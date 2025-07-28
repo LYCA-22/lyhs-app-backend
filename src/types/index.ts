@@ -68,13 +68,13 @@ export interface BetaNewUserData {
 
 // 授權碼資料
 export interface codeData {
-	createUserId: string;
-	createUserEmail: string;
+	created_userId: string;
+	create_email: string;
 	vuli: boolean;
 	level: string;
-	user_number: number;
-	createdTime: string;
-	registerCode: string;
+	number: number;
+	created_at: string;
+	code: string;
 }
 
 // StaffKV

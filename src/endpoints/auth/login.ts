@@ -8,6 +8,8 @@ import { encryptToken } from '../../utils/hashSessionId';
 import { cleanupExpiredSessions } from '../../utils/cleanSessions';
 import { setCookie } from 'hono/cookie';
 import { httpReturn, KnownErrorCode } from '../../utils/error';
+import { checkService } from '../../utils/checkService';
+import { globalErrorHandler } from '../../utils/errorHandler';
 
 export class userLogin extends OpenAPIRoute {
 	schema: OpenAPIRouteSchema = {
@@ -109,17 +111,19 @@ export class userLogin extends OpenAPIRoute {
 		const { browser: browserInfo, os: osInfo } = parseUserAgent(userAgent);
 		const clientIp = ctx.req.header('CF-Connecting-IP') || ctx.req.header('X-Forwarded-For') || ctx.req.header('X-Real-IP') || 'unknown';
 
-		if (!password || !email || !loginType) {
-			return httpReturn(ctx, KnownErrorCode.MISSING_REQUIRED_FIELDS, {
-				missingFields: [!email && 'email', !password && 'password', !loginType && 'loginType'].filter(Boolean),
-			});
-		}
-
-		if (loginType != 'APP' && loginType != 'WEB') {
-			return httpReturn(ctx, KnownErrorCode.INVALID_LOGIN_TYPE);
-		}
-
 		try {
+			await checkService('user_login', ctx);
+
+			if (!password || !email || !loginType) {
+				return httpReturn(ctx, KnownErrorCode.MISSING_REQUIRED_FIELDS, {
+					missingFields: [!email && 'email', !password && 'password', !loginType && 'loginType'].filter(Boolean),
+				});
+			}
+
+			if (loginType != 'APP' && loginType != 'WEB') {
+				return httpReturn(ctx, KnownErrorCode.INVALID_LOGIN_TYPE);
+			}
+
 			const user = await env.DATABASE.prepare('SELECT * FROM accountData WHERE email = ?').bind(email).first();
 			if (!user) {
 				return httpReturn(ctx, KnownErrorCode.USER_NOT_FOUND);
@@ -184,17 +188,7 @@ export class userLogin extends OpenAPIRoute {
 			ctx.header('Access-Control-Allow-Credentials', 'true');
 			return ctx.json({ message: 'Login successful' }, 200);
 		} catch (error) {
-			if (error instanceof Error) {
-				console.error('Error during login:', error);
-				return httpReturn(ctx, KnownErrorCode.INTERNAL_SERVER_ERROR, {
-					originalError: error.message,
-					context: 'user login',
-				});
-			}
-			console.error('Unexpected error during login:', error);
-			return httpReturn(ctx, KnownErrorCode.UNKNOWN_ERROR, {
-				context: 'user login',
-			});
+			return globalErrorHandler(error as Error, ctx);
 		}
 	}
 }

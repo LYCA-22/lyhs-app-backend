@@ -7,6 +7,7 @@ import { OpenAPIRoute, OpenAPIRouteSchema } from 'chanfana';
 import { encryptToken } from '../../utils/hashSessionId';
 import { setCookie } from 'hono/cookie';
 import { getUserByEmail } from '../../utils/getUserData';
+import { globalErrorHandler } from '../../utils/errorHandler';
 
 export class googleLogin extends OpenAPIRoute {
 	schema: OpenAPIRouteSchema = {
@@ -201,9 +202,8 @@ export class googleLogin extends OpenAPIRoute {
 
 			ctx.header('Access-Control-Allow-Credentials', 'true');
 			return ctx.json({ message: 'Login successful' }, 200);
-		} catch (error: any) {
-			console.error('Error Login Google account', error);
-			return ctx.json({ error: error }, 500);
+		} catch (error) {
+			return globalErrorHandler(error as Error, ctx);
 		}
 	}
 }

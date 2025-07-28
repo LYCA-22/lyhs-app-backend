@@ -112,13 +112,11 @@ export class addStaff extends OpenAPIRoute {
 			const body = await ctx.req.json();
 			const { code, email, name, password, Class, grade, role } = body;
 
-			if (!code) {
+			if (!code || !email || !name || !password || !Class || !grade) {
 				throw new errorHandler(KnownErrorCode.MISSING_REQUIRED_FIELDS);
 			}
 
-			const codeData = await env.DATABASE.prepare(`SELECT * FROM register_codes WHERE registerCode = ?`)
-				.bind(code)
-				.first<codeData | null>();
+			const codeData = await env.DATABASE.prepare(`SELECT * FROM register_codes WHERE code = ?`).bind(code).first<codeData | null>();
 
 			if (!codeData) {
 				throw new errorHandler(KnownErrorCode.INVALID_STAFF_CODE);
@@ -130,24 +128,23 @@ export class addStaff extends OpenAPIRoute {
 			}
 
 			const hashedPassword = await hashPassword(password);
-			const userId = crypto.randomUUID();
-			const auth_person = codeData.createUserEmail;
+			const created_person = codeData.create_email;
 			let type = 'staff';
 
 			await env.DATABASE.prepare(
 				`
-				INSERT INTO accountData (id, email, password, name, type, level, class, grade, role, auth_person)
-				VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+				INSERT INTO accountData (email, password, name, type, level, class, grade, role, created_person)
+				VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 			`,
 			)
-				.bind(userId, email, hashedPassword, name, type, codeData.level, Class, grade, role, auth_person)
+				.bind(email, hashedPassword, name, type, codeData.level, Class, grade, role, '')
 				.run();
 
-			if (codeData.vuli && codeData.user_number !== 1) {
-				const newUserNumber = codeData.user_number - 1;
-				await env.DATABASE.prepare(`UPDATE register_codes SET user_number = ? WHERE registerCode = ?`).bind(newUserNumber, code).run();
+			if (codeData.vuli && codeData.number !== 1) {
+				const newUserNumber = codeData.number - 1;
+				await env.DATABASE.prepare(`UPDATE register_codes SET number = ? WHERE code = ?`).bind(newUserNumber, code).run();
 			} else {
-				await env.DATABASE.prepare(`DELETE FROM register_codes WHERE registerCode = ?`).bind(code).run();
+				await env.DATABASE.prepare(`DELETE FROM register_codes WHERE code = ?`).bind(code).run();
 			}
 
 			return ctx.json({ message: 'User registered successfully' }, 200);

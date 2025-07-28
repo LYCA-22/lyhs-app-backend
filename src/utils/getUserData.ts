@@ -41,6 +41,7 @@ async function executeUserQuery(query: string, param: string, ctx: AppContext): 
 		}
 
 		const userRecord = queryResult.results[0] as unknown as userDataRaw;
+		console.log(userRecord);
 		return transformUserData(userRecord);
 	} catch (error) {
 		console.error('Database error in user query:', {
@@ -60,12 +61,12 @@ async function executeUserQuery(query: string, param: string, ctx: AppContext): 
 
 // 公開函數：通過 ID 獲取用戶
 export async function getUserById(userId: string, ctx: AppContext): Promise<userData | Response> {
-	const query = 'SELECT id, name, email, type, level, class, grade, role, auth_person, oauth FROM accountData WHERE id = ?';
+	const query = 'SELECT id, name, email, type, level, class, grade, role, number, created_person, oauth FROM accountData WHERE id = ?';
 	return executeUserQuery(query, userId, ctx);
 }
 
 // 公開函數：通過 Email 獲取用戶
 export async function getUserByEmail(email: string, ctx: AppContext): Promise<userData | Response> {
-	const query = 'SELECT id, name, email, type, level, class, grade, role, auth_person, oauth FROM accountData WHERE email = ?';
+	const query = 'SELECT id, name, email, type, level, class, grade, role, created_person, oauth FROM accountData WHERE email = ?';
 	return executeUserQuery(query, email, ctx);
 }

@@ -11,13 +11,13 @@ enabled = true
 
 [[d1_databases]]
 binding = "DATABASE"
-database_name = "lycaapis-db"
-database_id = "c154985f-2d35-411c-b4f2-8cc56fc7cfa3"
+database_name = "lyhs-plus-database"
+database_id = "21f251b6-3de6-4e42-9644-9e8dd26ee367"
 
 [[kv_namespaces]]
 binding = "sessionKV"
-id = "05dfa7f370304a55addd5cdfe0aece28"
+id = "3a0769a46dc34c2b9b9cf20310608166"
 
 [[kv_namespaces]]
 binding = "mailKV"
-id = "90e7fda58e1545f7b7e7259616c24212"
+id = "096bd159f7a24a5f8e47c45c2b03110a"

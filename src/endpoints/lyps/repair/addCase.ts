@@ -1,6 +1,8 @@
 import { OpenAPIRoute, OpenAPIRouteSchema } from 'chanfana';
 import { AppContext } from '../../..';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import { checkService } from '../../../utils/checkService';
+import { globalErrorHandler } from '../../../utils/errorHandler';
 
 export class addCase extends OpenAPIRoute {
 	schema: OpenAPIRouteSchema = {
@@ -67,16 +69,18 @@ export class addCase extends OpenAPIRoute {
 
 		let fileName = null;
 
-		const s3Client = new S3Client({
-			region: 'us-003',
-			endpoint: 'https://us-003.s3.synologyc2.net',
-			credentials: {
-				accessKeyId: 'usCdBZpYl65Ai68MaLZH7EE36Afh4791',
-				secretAccessKey: 'jM4vQFWKkOEY2SRPEakoVRQYmDXrjhEd',
-			},
-		});
-
 		try {
+			await checkService('repair', ctx);
+
+			const s3Client = new S3Client({
+				region: 'us-003',
+				endpoint: 'https://us-003.s3.synologyc2.net',
+				credentials: {
+					accessKeyId: 'usCdBZpYl65Ai68MaLZH7EE36Afh4791',
+					secretAccessKey: 'jM4vQFWKkOEY2SRPEakoVRQYmDXrjhEd',
+				},
+			});
+
 			if (imageFile) {
 				const arrayBuffer = await imageFile.arrayBuffer();
 				const uint8Array = new Uint8Array(arrayBuffer);
@@ -99,12 +103,7 @@ export class addCase extends OpenAPIRoute {
 				.run();
 			return ctx.json({ message: 'Case added successfully' }, 200);
 		} catch (e) {
-			if (e instanceof Error) {
-				console.error(e.message);
-				return ctx.json({ error: `Error in adding case: ${e.message}` }, 500);
-			}
-			console.error(e);
-			return ctx.json({ error: 'Unknown error.' }, 500);
+			return globalErrorHandler(e as Error, ctx);
 		}
 	}
 }
