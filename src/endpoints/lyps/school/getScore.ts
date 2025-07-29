@@ -1,5 +1,6 @@
 import { OpenAPIRoute } from 'chanfana';
 import { AppContext } from '../../..';
+import { globalErrorHandler } from '../../../utils/errorHandler';
 
 export class getScore extends OpenAPIRoute {
 	async handle(ctx: AppContext) {
@@ -53,9 +54,7 @@ export class getScore extends OpenAPIRoute {
 
 			return ctx.json({ result: result, state: result2 }, 200);
 		} catch (e) {
-			if (e instanceof Error) {
-				return ctx.json({ error: e }, 500);
-			}
+			return globalErrorHandler(e as Error, ctx);
 		}
 	}
 }

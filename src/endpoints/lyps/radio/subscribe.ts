@@ -1,5 +1,6 @@
 import { OpenAPIRoute, OpenAPIRouteSchema } from 'chanfana';
 import { AppContext } from '../../..';
+import { globalErrorHandler } from '../../../utils/errorHandler';
 
 export class SubscribePush extends OpenAPIRoute {
 	schema: OpenAPIRouteSchema = {
@@ -19,9 +20,8 @@ export class SubscribePush extends OpenAPIRoute {
 			await db.prepare('INSERT INTO subscriptions (subscription) VALUES (?)').bind(JSON.stringify(subscription)).run();
 
 			return ctx.json({ success: true });
-		} catch (error) {
-			console.error('Subscription error:', error);
-			return ctx.json({ error: 'Failed to save subscription' }, 500);
+		} catch (e) {
+			return globalErrorHandler(e as Error, ctx);
 		}
 	}
 }

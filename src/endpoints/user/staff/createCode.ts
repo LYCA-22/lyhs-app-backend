@@ -1,6 +1,7 @@
 import { OpenAPIRoute, OpenAPIRouteSchema } from 'chanfana';
 import { AppContext } from '../../..';
 import { verifySession } from '../../../utils/verifySession';
+import { globalErrorHandler } from '../../../utils/errorHandler';
 
 export class createStaffCode extends OpenAPIRoute {
 	schema: OpenAPIRouteSchema = {
@@ -117,24 +118,17 @@ export class createStaffCode extends OpenAPIRoute {
 
 	async handle(ctx: AppContext) {
 		const env = ctx.env;
-		let vuli: boolean; // 大量授權
-		let new_level: string; // 新帳號權限
+		const { vuli, new_level } = await ctx.req.json();
 
-		const body: { vuli: boolean; level: string } = await ctx.req.json();
-		vuli = body.vuli;
-		new_level = body.level;
-
-		if (body.level === 'A1' || typeof vuli !== 'boolean') {
+		if (new_level === 'A1' || typeof vuli !== 'boolean') {
 			return ctx.json({ error: 'Invalid level or information' }, 400);
 		}
 
 		try {
-			const result = await verifySession(ctx);
-			if (result instanceof Response) {
-				return result;
-			}
+			const userId = await verifySession(ctx);
+
 			const userData = await env.DATABASE.prepare(`SELECT level, email FROM accountData WHERE id = ?`)
-				.bind(result)
+				.bind(userId)
 				.first<{ level: string; email: string }>();
 
 			if (!userData) {
@@ -152,7 +146,7 @@ export class createStaffCode extends OpenAPIRoute {
 				.map((n) => n % 10)
 				.join('');
 			const codeData = {
-				createUserId: result,
+				createUserId: userId,
 				createUserEmail: email,
 				vuli: vuli,
 				level: new_level,
@@ -168,12 +162,7 @@ export class createStaffCode extends OpenAPIRoute {
 				.run();
 			return ctx.json({ code: code }, 200);
 		} catch (e) {
-			if (e instanceof Error) {
-				console.error('Error creating code:', e);
-				return ctx.json({ error: e.message }, 500);
-			}
-			console.error('Unexpected error:', e);
-			return ctx.json({ error: 'Internal server error' }, 500);
+			return globalErrorHandler(e as Error, ctx);
 		}
 	}
 }

@@ -1,6 +1,7 @@
 import { OpenAPIRoute, OpenAPIRouteSchema } from 'chanfana';
 import { AppContext } from '../..';
 import { verifySession } from '../../utils/verifySession';
+import { globalErrorHandler } from '../../utils/errorHandler';
 
 export class getSessionList extends OpenAPIRoute {
 	schema: OpenAPIRouteSchema = {
@@ -80,12 +81,7 @@ export class getSessionList extends OpenAPIRoute {
 			const sessions = JSON.parse(sessionData);
 			return ctx.json({ data: sessions });
 		} catch (e) {
-			if (e instanceof Error) {
-				console.error('Error in getSessionList:', e.message);
-				return ctx.json({ error: `Error in getSessionList: ${e.message}` }, 500);
-			}
-			console.error('Error in getSessionList:', e);
-			return ctx.json({ error: `Unknown error` }, 500);
+			return globalErrorHandler(e as Error, ctx);
 		}
 	}
 }

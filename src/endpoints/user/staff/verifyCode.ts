@@ -1,6 +1,8 @@
 import { OpenAPIRoute, OpenAPIRouteSchema } from 'chanfana';
 import { AppContext } from '../../..';
 import { codeData } from '../../../types';
+import { globalErrorHandler } from '../../../utils/errorHandler';
+import { errorHandler, KnownErrorCode } from '../../../utils/error';
 
 export class verifyCode extends OpenAPIRoute {
 	schema: OpenAPIRouteSchema = {
@@ -100,23 +102,19 @@ export class verifyCode extends OpenAPIRoute {
 	async handle(ctx: AppContext) {
 		const env = ctx.env;
 		try {
-			const body: { code: string } = await ctx.req.json();
-			const code = body.code;
+			const { code } = await ctx.req.json();
 			if (!code) {
-				return ctx.json({ error: 'Code cannot be empty' }, 400);
+				throw new errorHandler(KnownErrorCode.MISSING_REQUIRED_FIELDS);
 			}
+
 			const codeData = await env.DATABASE.prepare(`SELECT * FROM register_codes WHERE code = ?`).bind(code).first<codeData | null>();
 			if (!codeData) {
-				return ctx.json({ error: 'Invalid code' }, 404);
+				throw new errorHandler(KnownErrorCode.INVALID_STAFF_CODE);
 			}
+
 			return ctx.json({ code: code }, 200);
-		} catch (error) {
-			if (error instanceof Error) {
-				console.error('Error in verifyCode', error.message);
-				return ctx.json({ error: `Error in verifyCode:${error.message}` }, 500);
-			}
-			console.error('Unknown error');
-			return ctx.json({ error: 'Unknown error' }, 500);
+		} catch (e) {
+			return globalErrorHandler(e as Error, ctx);
 		}
 	}
 }

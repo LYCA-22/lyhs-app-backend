@@ -2,6 +2,8 @@ import { AppContext } from '../../..';
 import { verifySession } from '../../../utils/verifySession';
 import { codeData } from '../../../types';
 import { OpenAPIRoute, OpenAPIRouteSchema } from 'chanfana';
+import { globalErrorHandler } from '../../../utils/errorHandler';
+import { errorHandler, KnownErrorCode } from '../../../utils/error';
 
 export class listCode extends OpenAPIRoute {
 	schema: OpenAPIRouteSchema = {
@@ -104,31 +106,25 @@ export class listCode extends OpenAPIRoute {
 		const env = ctx.env;
 
 		try {
-			const result = await verifySession(ctx);
-			if (result instanceof Response) {
-				return result;
-			}
+			const userId = await verifySession(ctx);
 
 			const userData = await env.DATABASE.prepare(`SELECT level, email FROM accountData WHERE id = ?`)
-				.bind(result)
+				.bind(userId)
 				.first<{ level: string; email: string }>();
 
 			if (!userData) {
-				console.error('User not found');
-				return ctx.json({ error: 'User not found' }, 404);
+				throw new errorHandler(KnownErrorCode.USER_NOT_FOUND);
 			}
 
 			if (userData.level !== 'A1') {
-				console.error('Unauthorized access attempt');
-				return ctx.json({ error: 'Forbidden' }, 403);
+				throw new errorHandler(KnownErrorCode.FORBIDDEN);
 			}
 
 			const allCodeData = await env.DATABASE.prepare(`SELECT * FROM register_codes`).all<codeData[]>();
 
 			return ctx.json({ data: allCodeData }, 200);
-		} catch (error) {
-			console.error('Server error:', error);
-			return ctx.json({ error: 'Internal server error' }, 500);
+		} catch (e) {
+			return globalErrorHandler(e as Error, ctx);
 		}
 	}
 }

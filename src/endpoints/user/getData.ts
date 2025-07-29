@@ -110,9 +110,8 @@ export class getUserData extends OpenAPIRoute {
 
 	async handle(ctx: AppContext) {
 		try {
-			const result = await verifySession(ctx);
-			const userId = result as string;
-			const userData = await getUserById(userId, ctx);
+			const userId = await verifySession(ctx);
+			const userData = await getUserById(userId as string, ctx);
 
 			return ctx.json({ data: userData }, 200);
 		} catch (error) {

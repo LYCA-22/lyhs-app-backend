@@ -4,6 +4,7 @@ import { verifySession } from '../../../utils/verifySession';
 import { GetObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { Repair } from '../../../types';
+import { globalErrorHandler } from '../../../utils/errorHandler';
 
 export class listCases extends OpenAPIRoute {
 	schema: OpenAPIRouteSchema = {
@@ -55,9 +56,6 @@ export class listCases extends OpenAPIRoute {
 
 		try {
 			const result = await verifySession(ctx);
-			if (result instanceof Response) {
-				return result;
-			}
 
 			const caseData = await env.DATABASE.prepare('SELECT * FROM Repairs ORDER BY created_at DESC').all();
 			const cases = caseData.results as unknown as Repair[];
@@ -82,9 +80,8 @@ export class listCases extends OpenAPIRoute {
 			);
 
 			return ctx.json({ status: 'success', data: casesWithImageUrls }, 200);
-		} catch (error) {
-			console.error(error);
-			return ctx.json({ error: 'Internal Server Error' }, 500);
+		} catch (e) {
+			return globalErrorHandler(e as Error, ctx);
 		}
 	}
 }

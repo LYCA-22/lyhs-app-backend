@@ -2,6 +2,8 @@ import { OpenAPIRoute, OpenAPIRouteSchema } from 'chanfana';
 import { AppContext } from '../../..';
 import { verifySession } from '../../../utils/verifySession';
 import { studentData } from '../../../types';
+import { globalErrorHandler } from '../../../utils/errorHandler';
+import { errorHandler, KnownErrorCode } from '../../../utils/error';
 
 export class getMailDetail extends OpenAPIRoute {
 	schema: OpenAPIRouteSchema = {
@@ -116,30 +118,27 @@ export class getMailDetail extends OpenAPIRoute {
 		const env = ctx.env;
 		const code = ctx.req.query('code');
 
-		if (!code) {
-			return ctx.json({ error: 'Code is missing' }, 400);
-		}
-
-		const result = await verifySession(ctx);
-		if (result instanceof Response) {
-			return result;
-		}
-
-		const { results } = await env.DATABASE.prepare('SELECT level, name FROM accountData WHERE id = ?').bind(result).all();
-		if (!results || results.length === 0) {
-			return ctx.json({ error: 'Invalid user' }, 404);
-		}
-
-		const userLevel = results[0].level;
-		if (userLevel !== 'A1' && userLevel !== 'L3') {
-			return ctx.json({ error: 'Permission denied' }, 403);
-		}
-		const userName = results[0].name;
-
 		try {
+			if (!code) {
+				throw new errorHandler(KnownErrorCode.MISSING_REQUIRED_FIELDS);
+			}
+
+			const userId = await verifySession(ctx);
+
+			const { results } = await env.DATABASE.prepare('SELECT level, name FROM accountData WHERE id = ?').bind(userId).all();
+			if (!results || results.length === 0) {
+				throw new errorHandler(KnownErrorCode.USER_NOT_FOUND);
+			}
+
+			const userLevel = results[0].level;
+			if (userLevel !== 'A1' && userLevel !== 'L3') {
+				throw new errorHandler(KnownErrorCode.FORBIDDEN);
+			}
+			const userName = results[0].name;
+
 			const projectData = (await env.mailKV.get(code, { type: 'json' })) as studentData;
 			if (!projectData) {
-				return ctx.json({ error: 'Invalid code' }, 404);
+				throw new errorHandler(KnownErrorCode.SRM_RESOURCE_NOT_FOUND);
 			}
 
 			if (userLevel === 'A1') {
@@ -147,21 +146,16 @@ export class getMailDetail extends OpenAPIRoute {
 			}
 
 			if (projectData.handler === '') {
-				return ctx.json({ error: 'Project not assigned' }, 403);
+				throw new errorHandler(KnownErrorCode.UNKNOWN_ERROR);
 			}
 
 			if (projectData.handler !== userName) {
-				return ctx.json({ error: 'Permission denied' }, 403);
+				throw new errorHandler(KnownErrorCode.FORBIDDEN);
 			}
 
 			return ctx.json({ data: projectData }, 200);
 		} catch (e) {
-			if (e instanceof Error) {
-				console.error('Error during get project:', e.message);
-				return ctx.json({ error: `Error: ${e.message}` }, 500);
-			}
-			console.error('Error during get project:', e);
-			return ctx.json({ error: 'Internal server error' }, 500);
+			return globalErrorHandler(e as Error, ctx);
 		}
 	}
 }

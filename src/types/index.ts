@@ -13,6 +13,7 @@ export interface userData {
 	roleName?: UserRole[];
 	oauth?: string[];
 	auth_person?: string;
+	number: number;
 }
 
 export enum UserRole {
@@ -42,6 +43,7 @@ export interface userDataRaw {
 	role?: string;
 	auth_person?: string;
 	oauth?: string;
+	number: number;
 }
 
 // 用戶登入資料

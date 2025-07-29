@@ -115,8 +115,8 @@ export class getUserData extends OpenAPIRoute {
 			const userData = await getUserById(userId, ctx);
 
 			return ctx.json({ data: userData }, 200);
-		} catch (error) {
-			return globalErrorHandler(error as Error, ctx);
+		} catch (e) {
+			return globalErrorHandler(e as Error, ctx);
 		}
 	}
 }

@@ -1,7 +1,7 @@
 import { OpenAPIRoute } from 'chanfana';
-import { AppContext } from '../..';
-import { globalErrorHandler } from '../../utils/errorHandler';
-import { verifySession } from '../../utils/verifySession';
+import { AppContext } from '../../..';
+import { verifySession } from '../../../utils/verifySession';
+import { globalErrorHandler } from '../../../utils/errorHandler';
 
 export class getServices extends OpenAPIRoute {
 	async handle(ctx: AppContext) {

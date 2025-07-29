@@ -2,6 +2,8 @@ import { OpenAPIRoute, OpenAPIRouteSchema } from 'chanfana';
 import { AppContext } from '../..';
 import { userData } from '../../types';
 import { hashPassword } from '../../utils/hashPsw';
+import { globalErrorHandler } from '../../utils/errorHandler';
+import { errorHandler, KnownErrorCode } from '../../utils/error';
 
 export class userRegister extends OpenAPIRoute {
 	schema: OpenAPIRouteSchema = {
@@ -84,31 +86,28 @@ export class userRegister extends OpenAPIRoute {
 
 	async handle(ctx: AppContext) {
 		const env = ctx.env;
-		const { email, password, name, Class, grade }: userData = await ctx.req.json();
+		const { email, password, name, Class, grade, number }: userData = await ctx.req.json();
 
 		try {
 			const existingUser = await env.DATABASE.prepare('SELECT * FROM accountData WHERE email = ?').bind(email).first();
 			if (existingUser) {
-				return ctx.json({ error: 'Account already exists' }, 409);
+				throw new errorHandler(KnownErrorCode.USER_ALREADY_EXISTS);
 			}
 
-			const userId = crypto.randomUUID();
 			const hashedPassword = await hashPassword(password);
 
 			await env.DATABASE.prepare(
 				`
-				INSERT INTO accountData (id, email, password, name, type, class, grade)
+				INSERT INTO accountData (email, password, name, number, type, class, grade)
 				VALUES (?, ?, ?, ?, ?, ?, ?)
 			`,
 			)
-				.bind(userId, email, hashedPassword, name, 'stu', Class, grade)
+				.bind(email, hashedPassword, name, number, 'stu', Class, grade)
 				.run();
 
 			return ctx.json({ message: 'User registered successfully' }, 200);
-		} catch (error: unknown) {
-			console.error('Error during registration:', error);
-			const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
-			return ctx.json({ error: `Error: ${errorMessage}` }, 500);
+		} catch (e) {
+			return globalErrorHandler(e as Error, ctx);
 		}
 	}
 }

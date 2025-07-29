@@ -60,8 +60,8 @@ export class getUserNum extends OpenAPIRoute {
 			await verifySession(ctx);
 			const userNum = await env.DATABASE.prepare('SELECT COUNT(*) FROM accountData').first();
 			return ctx.json({ data: userNum }, 200);
-		} catch (error) {
-			return globalErrorHandler(error as Error, ctx);
+		} catch (e) {
+			return globalErrorHandler(e as Error, ctx);
 		}
 	}
 }

@@ -2,6 +2,8 @@ import { AppContext } from '../../..';
 import { verifySession } from '../../../utils/verifySession';
 import { studentData } from '../../../types';
 import { OpenAPIRoute, OpenAPIRouterType, OpenAPIRouteSchema } from 'chanfana';
+import { globalErrorHandler } from '../../../utils/errorHandler';
+import { errorHandler, KnownErrorCode } from '../../../utils/error';
 
 export class updateProject extends OpenAPIRoute {
 	schema: OpenAPIRouteSchema = {
@@ -88,17 +90,14 @@ export class updateProject extends OpenAPIRoute {
 
 	async handle(ctx: AppContext) {
 		const env = ctx.env;
-		const result = await verifySession(ctx);
-		if (result instanceof Response) {
-			return result;
-		}
-
 		const { code, handler, status }: { code: string; handler: string; status: string } = await ctx.req.json();
 		if (!code || !handler || !status) {
-			return ctx.json({ error: 'Data is missing' }, 400);
+			throw new errorHandler(KnownErrorCode.MISSING_REQUIRED_FIELDS);
 		}
 
 		try {
+			await verifySession(ctx);
+
 			const projectData = (await env.mailKV.get(code, { type: 'json' })) as studentData;
 			if (!projectData) {
 				return ctx.json({ error: 'Invalid code' }, 404);
@@ -108,13 +107,8 @@ export class updateProject extends OpenAPIRoute {
 			projectData.updatedTime = new Date().toISOString();
 			await env.mailKV.put(code, JSON.stringify(projectData));
 			return ctx.json({ message: 'Project updated successfully' }, 200);
-		} catch (e: any) {
-			if (e instanceof Error) {
-				console.error('Error during update project:', e.message);
-				return ctx.json({ error: `Error: ${e.message}` }, 500);
-			}
-			console.error('Error during update project:', e);
-			return ctx.json({ error: 'Internal server error' }, 500);
+		} catch (e) {
+			return globalErrorHandler(e as Error, ctx);
 		}
 	}
 }

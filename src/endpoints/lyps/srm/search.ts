@@ -1,6 +1,8 @@
 import { OpenAPIRoute, OpenAPIRouteSchema } from 'chanfana';
 import { AppContext } from '../../..';
 import { studentData } from '../../../types';
+import { globalErrorHandler } from '../../../utils/errorHandler';
+import { errorHandler, KnownErrorCode } from '../../../utils/error';
 
 export class searchMail extends OpenAPIRoute {
 	schema: OpenAPIRouteSchema = {
@@ -84,19 +86,19 @@ export class searchMail extends OpenAPIRoute {
 	async handle(ctx: AppContext) {
 		const env = ctx.env;
 		const code = ctx.req.query('code');
-		if (!code) {
-			return ctx.json({ error: 'Code is missing' }, 400);
-		}
 
 		try {
+			if (!code) {
+				throw new errorHandler(KnownErrorCode.MISSING_REQUIRED_FIELDS);
+			}
+
 			const projectData = (await env.mailKV.get(code, { type: 'json' })) as studentData;
 			if (!projectData) {
-				return ctx.json({ error: 'Invalid code' }, 404);
+				throw new errorHandler(KnownErrorCode.PCS_PROJECT_NOT_FOUND);
 			}
 			return ctx.json({ data: projectData }, 200);
-		} catch (e: any) {
-			console.error('Error during view project:', e.message);
-			return ctx.json({ error: `Error: ${e.message}` }, 500);
+		} catch (e) {
+			return globalErrorHandler(e as Error, ctx);
 		}
 	}
 }

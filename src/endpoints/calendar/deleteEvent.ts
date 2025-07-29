@@ -65,18 +65,14 @@ export class deleteEvent extends OpenAPIRoute {
 		const env = ctx.env;
 		try {
 			const result = await verifySession(ctx);
-			if (result instanceof Response) {
-				return result;
-			}
-
 			const { id }: { id: string } = await ctx.req.json();
 			if (!id) {
 				throw new errorHandler(KnownErrorCode.MISSING_REQUIRED_FIELDS);
 			}
 			await env.DATABASE.prepare('DELETE FROM calendar WHERE id = ?').bind(id).run();
 			return ctx.json({ message: 'successful' }, 200);
-		} catch (error) {
-			return globalErrorHandler(error as Error, ctx);
+		} catch (e) {
+			return globalErrorHandler(e as Error, ctx);
 		}
 	}
 }

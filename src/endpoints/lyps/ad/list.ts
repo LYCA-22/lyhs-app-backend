@@ -95,8 +95,8 @@ export class listAd extends OpenAPIRoute {
 			} else {
 				return ctx.json({ error: 'No announcements found' }, 404);
 			}
-		} catch (error) {
-			return globalErrorHandler(error as Error, ctx);
+		} catch (e) {
+			return globalErrorHandler(e as Error, ctx);
 		}
 	}
 }
@@ -147,7 +147,6 @@ async function getAD(url: string): Promise<Announcement[]> {
 
 		return announcements;
 	} catch (error) {
-		console.error('Error occurred:', error);
 		throw error;
 	}
 }

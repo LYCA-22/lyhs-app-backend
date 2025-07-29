@@ -2,7 +2,14 @@ import { OpenAPIRoute, OpenAPIRouteSchema } from 'chanfana';
 import { AppContext } from '../../..';
 import { verifySession } from '../../../utils/verifySession';
 import { errorHandler, httpReturn, KnownErrorCode } from '../../../utils/error';
-import { withErrorHandler, ValidationHelper, AuthorizationHelper, DatabaseHelper, BusinessLogicHelper } from '../../../utils/errorHandler';
+import {
+	withErrorHandler,
+	ValidationHelper,
+	AuthorizationHelper,
+	DatabaseHelper,
+	BusinessLogicHelper,
+	globalErrorHandler,
+} from '../../../utils/errorHandler';
 
 export class deleteStaffCode extends OpenAPIRoute {
 	schema: OpenAPIRouteSchema = {
@@ -153,60 +160,61 @@ export class deleteStaffCode extends OpenAPIRoute {
 		const codeToDelete = ctx.req.query('code');
 		const env = ctx.env;
 
-		// 驗證必填參數
-		if (!codeToDelete) {
-			return httpReturn(ctx, KnownErrorCode.MISSING_REQUIRED_FIELDS, { missingFields: ['code'] });
+		try {
+			// 驗證必填參數
+			if (!codeToDelete) {
+				return httpReturn(ctx, KnownErrorCode.MISSING_REQUIRED_FIELDS, { missingFields: ['code'] });
+			}
+
+			// 驗證會話
+			const result = await verifySession(ctx);
+
+			// 獲取使用者資料
+			const userData = await DatabaseHelper.executeQuery(
+				env.DATABASE.prepare(`SELECT level, email FROM accountData WHERE id = ?`).bind(result).first<{ level: string; email: string }>(),
+				KnownErrorCode.USER_NOT_FOUND,
+			);
+
+			// 驗證使用者存在
+			AuthorizationHelper.requireUser(userData);
+
+			// 驗證管理員權限
+			AuthorizationHelper.requireAdmin(userData!.level);
+
+			// 檢查註冊代碼是否存在
+			const existingCode = await DatabaseHelper.executeQuery(
+				env.DATABASE.prepare(`SELECT registerCode FROM register_codes WHERE registerCode = ?`)
+					.bind(codeToDelete)
+					.first<{ registerCode: string }>(),
+				KnownErrorCode.REGISTRATION_CODE_NOT_FOUND,
+			);
+
+			// 驗證註冊代碼存在
+			BusinessLogicHelper.validateRegistrationCode(existingCode);
+
+			// 刪除註冊代碼
+			const deleteResult = await DatabaseHelper.executeQuery(
+				env.DATABASE.prepare(`DELETE FROM register_codes WHERE registerCode = ?`).bind(codeToDelete).run(),
+			);
+
+			// 檢查刪除是否成功
+			if ('changes' in deleteResult && deleteResult.changes === 0) {
+				throw new errorHandler(KnownErrorCode.DATABASE_QUERY_FAILED, {
+					operation: 'delete',
+					table: 'register_codes',
+					code: codeToDelete,
+				});
+			}
+
+			return ctx.json(
+				{
+					message: '註冊代碼已成功刪除',
+					deletedCode: codeToDelete,
+				},
+				200,
+			);
+		} catch (e) {
+			return globalErrorHandler(e as Error, ctx);
 		}
-
-		// 驗證會話
-		const result = await verifySession(ctx);
-		if (result instanceof Response) {
-			return httpReturn(ctx, KnownErrorCode.SESSION_EXPIRED);
-		}
-
-		// 獲取使用者資料
-		const userData = await DatabaseHelper.executeQuery(
-			env.DATABASE.prepare(`SELECT level, email FROM accountData WHERE id = ?`).bind(result).first<{ level: string; email: string }>(),
-			KnownErrorCode.USER_NOT_FOUND,
-		);
-
-		// 驗證使用者存在
-		AuthorizationHelper.requireUser(userData);
-
-		// 驗證管理員權限
-		AuthorizationHelper.requireAdmin(userData!.level);
-
-		// 檢查註冊代碼是否存在
-		const existingCode = await DatabaseHelper.executeQuery(
-			env.DATABASE.prepare(`SELECT registerCode FROM register_codes WHERE registerCode = ?`)
-				.bind(codeToDelete)
-				.first<{ registerCode: string }>(),
-			KnownErrorCode.REGISTRATION_CODE_NOT_FOUND,
-		);
-
-		// 驗證註冊代碼存在
-		BusinessLogicHelper.validateRegistrationCode(existingCode);
-
-		// 刪除註冊代碼
-		const deleteResult = await DatabaseHelper.executeQuery(
-			env.DATABASE.prepare(`DELETE FROM register_codes WHERE registerCode = ?`).bind(codeToDelete).run(),
-		);
-
-		// 檢查刪除是否成功
-		if ('changes' in deleteResult && deleteResult.changes === 0) {
-			throw new errorHandler(KnownErrorCode.DATABASE_QUERY_FAILED, {
-				operation: 'delete',
-				table: 'register_codes',
-				code: codeToDelete,
-			});
-		}
-
-		return ctx.json(
-			{
-				message: '註冊代碼已成功刪除',
-				deletedCode: codeToDelete,
-			},
-			200,
-		);
 	}
 }

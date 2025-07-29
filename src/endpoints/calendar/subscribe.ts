@@ -1,5 +1,6 @@
 import { OpenAPIRoute, OpenAPIRouteSchema } from 'chanfana';
 import { AppContext } from '../..';
+import { globalErrorHandler } from '../../utils/errorHandler';
 
 interface CalendarEvent {
 	id: string;
@@ -57,12 +58,8 @@ export class subscribe extends OpenAPIRoute {
 					'Content-Disposition': `attachment; filename="${officeFilter || 'calendar'}.ics"`,
 				},
 			});
-		} catch (error: any) {
-			console.error('Error fetching events:', error);
-			return new Response(JSON.stringify({ error: error.message }), {
-				status: 500,
-				headers: { 'Content-Type': 'application/json' },
-			});
+		} catch (e) {
+			return globalErrorHandler(e as Error, ctx);
 		}
 	}
 }

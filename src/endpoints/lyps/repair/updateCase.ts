@@ -3,6 +3,8 @@ import { AppContext } from '../../..';
 import { verifySession } from '../../../utils/verifySession';
 import { getUserById } from '../../../utils/getUserData';
 import { userData } from '../../../types';
+import { globalErrorHandler } from '../../../utils/errorHandler';
+import { errorHandler, KnownErrorCode } from '../../../utils/error';
 
 export class updateCase extends OpenAPIRoute {
 	schema: OpenAPIRouteSchema = {
@@ -76,22 +78,15 @@ export class updateCase extends OpenAPIRoute {
 
 		try {
 			const userId = await verifySession(ctx);
-			if (userId instanceof Response) {
-				return userId;
-			}
-			const userData: userData | Response = await getUserById(userId as string, ctx);
-			if (userData instanceof Response) {
-				return userData;
-			}
+			const userData = (await getUserById(userId as string, ctx)) as userData;
 			if (!(userData.type !== 'stu' && (userData.level === 'A1' || userData.level === 'S1'))) {
-				return new Response('Unauthorized', { status: 401 });
+				throw new errorHandler(KnownErrorCode.UNAUTHORIZED_ACCESS);
 			}
 
 			await env.DATABASE.prepare('UPDATE Repairs SET status = ? WHERE id = ?').bind(status, id).run();
 			return ctx.json({ message: 'Case updated successfully' }, 200);
-		} catch (error) {
-			console.error(error);
-			return new Response('Internal Server Error', { status: 500 });
+		} catch (e) {
+			return globalErrorHandler(e as Error, ctx);
 		}
 	}
 }

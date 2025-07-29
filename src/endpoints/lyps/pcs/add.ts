@@ -2,6 +2,7 @@ import { OpenAPIRoute, OpenAPIRouteSchema } from 'chanfana';
 import { AppContext } from '../../..';
 import { verifySession } from '../../../utils/verifySession';
 import { getUserById } from '../../../utils/getUserData';
+import { globalErrorHandler } from '../../../utils/errorHandler';
 
 export class AddPcs extends OpenAPIRoute {
 	schema: OpenAPIRouteSchema = {
@@ -114,10 +115,7 @@ export class AddPcs extends OpenAPIRoute {
 
 			return ctx.json({ message: 'PCS added successfully' }, 200);
 		} catch (e) {
-			if (e instanceof Error) {
-				console.error(e);
-				return ctx.json({ error: 'Error in Adding PCS: ' + e.message }, 500);
-			}
+			return globalErrorHandler(e as Error, ctx);
 		}
 	}
 }

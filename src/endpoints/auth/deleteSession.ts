@@ -2,6 +2,8 @@ import { OpenAPIRoute, OpenAPIRouteSchema } from 'chanfana';
 import { AppContext } from '../..';
 import { verifySession } from '../../utils/verifySession';
 import { UserSession } from '../../types';
+import { globalErrorHandler } from '../../utils/errorHandler';
+import { errorHandler, KnownErrorCode } from '../../utils/error';
 
 export class deleteSession extends OpenAPIRoute {
 	schema: OpenAPIRouteSchema = {
@@ -71,13 +73,10 @@ export class deleteSession extends OpenAPIRoute {
 		try {
 			const delSessionId = ctx.req.param('sessionId');
 			if (!delSessionId) {
-				return ctx.json({ error: 'SessionId is required' }, 400);
+				throw new errorHandler(KnownErrorCode.MISSING_REQUIRED_FIELDS);
 			}
 
 			const result = await verifySession(ctx);
-			if (result instanceof Response) {
-				return result;
-			}
 
 			await env.sessionKV.delete(`session:${delSessionId}:data`);
 
@@ -93,13 +92,8 @@ export class deleteSession extends OpenAPIRoute {
 			}
 
 			return ctx.json({ message: 'Session deleted' }, 200);
-		} catch (error) {
-			if (error instanceof Error) {
-				console.error('Error in deleteSession:', error.message);
-				return ctx.json({ error: error.message }, 500);
-			}
-			console.error(error);
-			return ctx.json({ error: 'Unknown error' }, 500);
+		} catch (e) {
+			return globalErrorHandler(e as Error, ctx);
 		}
 	}
 }

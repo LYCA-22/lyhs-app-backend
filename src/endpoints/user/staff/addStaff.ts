@@ -148,8 +148,8 @@ export class addStaff extends OpenAPIRoute {
 			}
 
 			return ctx.json({ message: 'User registered successfully' }, 200);
-		} catch (error) {
-			return globalErrorHandler(error as Error, ctx);
+		} catch (e) {
+			return globalErrorHandler(e as Error, ctx);
 		}
 	}
 }

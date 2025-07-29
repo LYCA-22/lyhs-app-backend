@@ -1,6 +1,7 @@
 import { OpenAPIRoute, OpenAPIRouteSchema } from 'chanfana';
 import { AppContext } from '../..';
 import { verifySession } from '../../utils/verifySession';
+import { globalErrorHandler } from '../../utils/errorHandler';
 
 export class DeleteUser extends OpenAPIRoute {
 	schema: OpenAPIRouteSchema = {
@@ -52,20 +53,14 @@ export class DeleteUser extends OpenAPIRoute {
 	async handle(ctx: AppContext) {
 		const env = ctx.env;
 		try {
-			const result = await verifySession(ctx);
-			if (result instanceof Response) {
-				return result;
-			}
+			const userId = await verifySession(ctx);
 
-			await env.DATABASE.prepare('DELETE FROM accountData WHERE id = ?').bind(result).run();
-			await env.sessionKV.delete(`user:${result}:sessions`);
+			await env.DATABASE.prepare('DELETE FROM accountData WHERE id = ?').bind(userId).run();
+			await env.sessionKV.delete(`user:${userId}:sessions`);
+
 			return ctx.json({ message: 'Account deleted successfully' }, 200);
-		} catch (error) {
-			if (error instanceof Error) {
-				console.log('Error in deleting user:', error.message);
-				return ctx.json({ error: `Error in deleting user: ${error.message}` }, 500);
-			}
-			return ctx.json({ error: 'Unknown error' }, 500);
+		} catch (e) {
+			return globalErrorHandler(e as Error, ctx);
 		}
 	}
 }

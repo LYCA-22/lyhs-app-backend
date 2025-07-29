@@ -1,5 +1,6 @@
 import { OpenAPIRoute, OpenAPIRouteSchema } from 'chanfana';
 import { AppContext } from '../../..';
+import { globalErrorHandler } from '../../../utils/errorHandler';
 
 interface PushSubscription {
 	endpoint: string;
@@ -96,19 +97,8 @@ export class PushNews extends OpenAPIRoute {
 				success: results.filter((r) => r.status === 'fulfilled').length,
 				failed: results.filter((r) => r.status === 'rejected').length,
 			});
-		} catch (error) {
-			console.error('Push notification error:', error);
-			if (error instanceof Error) {
-				console.error('Error message:', error.message);
-				console.error('Error stack:', error.stack);
-			}
-			return ctx.json(
-				{
-					error: 'Failed to send notification',
-					message: error instanceof Error ? error.message : String(error),
-				},
-				500,
-			);
+		} catch (e) {
+			return globalErrorHandler(e as Error, ctx);
 		}
 	}
 }

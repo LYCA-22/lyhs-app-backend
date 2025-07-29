@@ -2,6 +2,8 @@ import { AppContext } from '../../..';
 import { verifySession } from '../../../utils/verifySession';
 import { studentData } from '../../../types';
 import { OpenAPIRoute, OpenAPIRouteSchema } from 'chanfana';
+import { globalErrorHandler } from '../../../utils/errorHandler';
+import { errorHandler, KnownErrorCode } from '../../../utils/error';
 
 export class deleteProject extends OpenAPIRoute {
 	schema: OpenAPIRouteSchema = {
@@ -85,25 +87,22 @@ export class deleteProject extends OpenAPIRoute {
 
 	async handle(ctx: AppContext) {
 		const env = ctx.env;
-		const result = await verifySession(ctx);
-		if (result instanceof Response) {
-			return result;
-		}
-
 		try {
+			const userId = await verifySession(ctx);
+
 			const code = ctx.req.query('code');
 			if (!code) {
-				return ctx.json({ error: 'Code is missing' }, 400);
+				throw new errorHandler(KnownErrorCode.MISSING_REQUIRED_FIELDS);
 			}
 
-			const { results } = await env.DATABASE.prepare('SELECT level FROM accountData WHERE id = ?').bind(result).all();
+			const { results } = await env.DATABASE.prepare('SELECT level FROM accountData WHERE id = ?').bind(userId).all();
 			if (!results || results.length === 0) {
-				return ctx.json({ error: 'Invalid user' }, 404);
+				throw new errorHandler(KnownErrorCode.USER_NOT_FOUND);
 			}
 
 			const projectData = (await env.mailKV.get(code, { type: 'json' })) as studentData;
 			if (!projectData) {
-				return ctx.json({ error: 'Invalid code' }, 404);
+				throw new errorHandler(KnownErrorCode.SRM_RESOURCE_NOT_FOUND);
 			}
 
 			if (projectData.handler === '') {
@@ -112,23 +111,18 @@ export class deleteProject extends OpenAPIRoute {
 					await env.mailKV.delete(code);
 					return ctx.json({ message: 'Project deleted successfully' }, 200);
 				} else {
-					return ctx.json({ error: 'Permission denied' }, 403);
+					throw new errorHandler(KnownErrorCode.FORBIDDEN);
 				}
 			} else {
-				if (projectData.handler === result || results[0].level === 'A1') {
+				if (projectData.handler === userId || results[0].level === 'A1') {
 					await env.mailKV.delete(code);
 					return ctx.json({ message: 'Project deleted successfully' }, 200);
 				} else {
-					return ctx.json({ error: 'Permission denied' }, 403);
+					throw new errorHandler(KnownErrorCode.FORBIDDEN);
 				}
 			}
 		} catch (e) {
-			if (e instanceof Error) {
-				console.error('Error during delete project:', e.message);
-				return ctx.json({ error: `Error during delete project:: ${e.message}` }, 500);
-			}
-			console.error('Error during delete project:', e);
-			return ctx.json({ error: 'Internal server error' }, 500);
+			return globalErrorHandler(e as Error, ctx);
 		}
 	}
 }

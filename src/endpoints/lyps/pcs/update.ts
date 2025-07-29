@@ -2,6 +2,7 @@ import { OpenAPIRoute, OpenAPIRouteSchema } from 'chanfana';
 import { AppContext } from '../../..';
 import { verifySession } from '../../../utils/verifySession';
 import { getUserById } from '../../../utils/getUserData';
+import { globalErrorHandler } from '../../../utils/errorHandler';
 
 export class updatePcs extends OpenAPIRoute {
 	schema: OpenAPIRouteSchema = {
@@ -67,10 +68,7 @@ export class updatePcs extends OpenAPIRoute {
 
 			return ctx.json({ message: 'Update successfully' }, 200);
 		} catch (e) {
-			if (e instanceof Error) {
-				console.error(e.message);
-				return ctx.json({ error: e.message }, 500);
-			}
+			return globalErrorHandler(e as Error, ctx);
 		}
 	}
 }

@@ -1,11 +1,11 @@
 import { createRouter } from '..';
-import { getServices } from './getService';
 import { getUserNum } from './getUserNum';
+import { registerServiceRoutes } from './service';
 
 export function registerAdminRoutes() {
 	const router = createRouter();
 
 	router.get('/account/total', getUserNum);
-	router.get('/service', getServices);
+	router.route('/service', registerServiceRoutes());
 	return router;
 }

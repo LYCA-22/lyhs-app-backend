@@ -3,6 +3,7 @@ import { AppContext } from '../../..';
 import { studentData } from '../../../types';
 import { checkService } from '../../../utils/checkService';
 import { globalErrorHandler } from '../../../utils/errorHandler';
+import { errorHandler, KnownErrorCode } from '../../../utils/error';
 
 export class addProject extends OpenAPIRoute {
 	schema: OpenAPIRouteSchema = {
@@ -100,12 +101,14 @@ export class addProject extends OpenAPIRoute {
 		const env = ctx.env;
 		const { email, name, type, title, description, Class, number, solution }: studentData = await ctx.req.json();
 
-		if (!email || !name || !type || !title || !description || !Class || !number || !solution) {
-			return ctx.json({ error: 'Information missing' }, 400);
-		}
-
 		try {
+			// Check the service status first.
 			await checkService('stu_mail', ctx);
+
+			// Second, check the information.
+			if (!email || !name || !type || !title || !description || !Class || !number || !solution) {
+				throw new errorHandler(KnownErrorCode.MISSING_REQUIRED_FIELDS);
+			}
 
 			const code = Array.from(crypto.getRandomValues(new Uint8Array(6)))
 				.map((n) => n % 10)

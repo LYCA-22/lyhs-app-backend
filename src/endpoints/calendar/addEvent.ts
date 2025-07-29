@@ -1,6 +1,8 @@
 import { OpenAPIRoute, OpenAPIRouterType, OpenAPIRouteSchema } from 'chanfana';
 import { AppContext } from '../..';
 import { verifySession } from '../../utils/verifySession';
+import { globalErrorHandler } from '../../utils/errorHandler';
+import { errorHandler, KnownErrorCode } from '../../utils/error';
 
 export class addEvent extends OpenAPIRoute {
 	schema: OpenAPIRouteSchema = {
@@ -63,22 +65,18 @@ export class addEvent extends OpenAPIRoute {
 		const env = ctx.env;
 		try {
 			const result = await verifySession(ctx);
-			if (result instanceof Response) {
-				return result;
-			}
 
 			const { id, title, description, date, office }: { id: string; title: string; description: string; date: string; office: string } =
 				await ctx.req.json();
 			if (!id || !title || !description || !date || !office) {
-				return ctx.json({ error: 'Missing required fields' }, 400);
+				throw new errorHandler(KnownErrorCode.MISSING_REQUIRED_FIELDS);
 			}
 			await env.DATABASE.prepare('INSERT INTO calendar (id, title, description, date, office) VALUES (?, ?, ?, ?, ?)')
 				.bind(id, title, description, date, office)
 				.run();
 			return ctx.json({ message: 'successful' }, 200);
-		} catch (error: any) {
-			console.error('Error adding event:', error);
-			return ctx.json({ error: error.message }, 500);
+		} catch (e) {
+			return globalErrorHandler(e as Error, ctx);
 		}
 	}
 }

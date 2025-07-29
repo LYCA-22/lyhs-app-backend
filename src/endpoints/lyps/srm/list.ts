@@ -1,8 +1,10 @@
 import { AppContext } from '../../..';
 import { verifySession } from '../../../utils/verifySession';
-import { studentData } from '../../../types';
+import { studentData, userData } from '../../../types';
 import { OpenAPIRoute, OpenAPIRouteSchema } from 'chanfana';
 import { getUserById } from '../../../utils/getUserData';
+import { globalErrorHandler } from '../../../utils/errorHandler';
+import { errorHandler, KnownErrorCode } from '../../../utils/error';
 
 export class getProjectList extends OpenAPIRoute {
 	schema: OpenAPIRouteSchema = {
@@ -82,20 +84,12 @@ export class getProjectList extends OpenAPIRoute {
 	async handle(ctx: AppContext) {
 		const env = ctx.env;
 		try {
-			const result = await verifySession(ctx);
-			if (result instanceof Response) {
-				return result;
-			}
-			const userId = result;
-
-			const results = await getUserById(userId as string, ctx);
-			if (results instanceof Response) {
-				return results;
-			}
+			const userId = await verifySession(ctx);
+			const results = (await getUserById(userId as string, ctx)) as userData;
 
 			const userLevel = results.level;
 			if (userLevel !== 'A1' && userLevel !== 'L3') {
-				return ctx.json({ error: 'Permission denied' }, 403);
+				throw new errorHandler(KnownErrorCode.FORBIDDEN);
 			}
 
 			const projectsList = await env.mailKV.list();
@@ -118,13 +112,8 @@ export class getProjectList extends OpenAPIRoute {
 			}
 
 			return ctx.json({ data: allProjects }, 200);
-		} catch (e: any) {
-			if (e instanceof Error) {
-				console.error('Error during get project:', e.message);
-				return ctx.json({ error: `Error: ${e.message}` }, 500);
-			}
-			console.error('Error during get project:', e);
-			return ctx.json({ error: `Unknown error` }, 500);
+		} catch (e) {
+			return globalErrorHandler(e as Error, ctx);
 		}
 	}
 }

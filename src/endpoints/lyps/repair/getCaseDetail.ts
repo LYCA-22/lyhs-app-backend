@@ -3,6 +3,8 @@ import { AppContext } from '../../..';
 import { GetObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { Repair } from '../../../types';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { globalErrorHandler } from '../../../utils/errorHandler';
+import { errorHandler, KnownErrorCode } from '../../../utils/error';
 
 export class getDetailCase extends OpenAPIRoute {
 	schema: OpenAPIRouteSchema = {
@@ -115,7 +117,7 @@ export class getDetailCase extends OpenAPIRoute {
 		try {
 			const id = ctx.req.query('id');
 			if (!id) {
-				return ctx.json({ error: 'Missing ID' }, 400);
+				throw new errorHandler(KnownErrorCode.MISSING_REQUIRED_FIELDS);
 			}
 			const d1Response = (await env.DATABASE.prepare('SELECT * FROM Repairs WHERE id = ?').bind(id).all()) as D1Result;
 
@@ -134,11 +136,8 @@ export class getDetailCase extends OpenAPIRoute {
 			}
 
 			return ctx.json({ status: 'success', data: { ...result, ImageUrl: imageUrl } }, 200);
-		} catch (error) {
-			if (error instanceof Error) {
-				console.error(error);
-				return ctx.json({ error: error.message });
-			}
+		} catch (e) {
+			return globalErrorHandler(e as Error, ctx);
 		}
 	}
 }

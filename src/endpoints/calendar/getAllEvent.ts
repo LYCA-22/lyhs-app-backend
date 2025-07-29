@@ -1,5 +1,6 @@
 import { OpenAPIRoute, OpenAPIRouteSchema } from 'chanfana';
 import { AppContext } from '../..';
+import { globalErrorHandler } from '../../utils/errorHandler';
 
 export class getAllEvents extends OpenAPIRoute {
 	schema: OpenAPIRouteSchema = {
@@ -82,9 +83,8 @@ export class getAllEvents extends OpenAPIRoute {
 		try {
 			const statement = await env.DATABASE.prepare('SELECT * FROM calendar').all();
 			return ctx.json({ data: statement }, 200);
-		} catch (error: any) {
-			console.error('Error fetching events:', error);
-			return ctx.json({ error: error.message }, 500);
+		} catch (e) {
+			return globalErrorHandler(e as Error, ctx);
 		}
 	}
 }

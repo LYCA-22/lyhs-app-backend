@@ -1,5 +1,6 @@
 import { OpenAPIRoute, OpenAPIRouteSchema } from 'chanfana';
 import { AppContext } from '../../..';
+import { globalErrorHandler } from '../../../utils/errorHandler';
 
 interface login {
 	loginId: string;
@@ -95,10 +96,8 @@ export class getSessionKey extends OpenAPIRoute {
 			const sessionKey = match?.[1];
 
 			return ctx.json({ message: 'success', session_key: sessionKey });
-		} catch (error) {
-			if (error instanceof Error) {
-				return ctx.json({ message: 'error', error: error.message });
-			}
+		} catch (e) {
+			return globalErrorHandler(e as Error, ctx);
 		}
 	}
 }

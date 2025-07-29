@@ -1,5 +1,7 @@
 import { OpenAPIRoute, OpenAPIRouteSchema } from 'chanfana';
 import { AppContext } from '../../..';
+import { globalErrorHandler } from '../../../utils/errorHandler';
+import { errorHandler, KnownErrorCode } from '../../../utils/error';
 
 export class deleteCase extends OpenAPIRoute {
 	schema: OpenAPIRouteSchema = {
@@ -57,23 +59,24 @@ export class deleteCase extends OpenAPIRoute {
 		try {
 			const id = ctx.req.query('id');
 			if (!id) {
-				return ctx.json({ error: 'Missing necessary case ID' }, 400);
+				throw new errorHandler(KnownErrorCode.MISSING_REQUIRED_FIELDS);
 			}
+
 			const checkResult = await env.DATABASE.prepare('SELECT id FROM repair_cases WHERE id = ?').bind(id).first();
 
 			if (!checkResult) {
-				return ctx.json({ error: 'Case not found' }, 404);
+				throw new errorHandler(KnownErrorCode.REPAIR_CASE_NOT_FOUND);
 			}
 
 			const result = await env.DATABASE.prepare('DELETE FROM repair_cases WHERE id = ?').bind(id).run();
+
 			if (result.success) {
 				return ctx.json({ message: 'Case deleted successfully' }, 200);
 			} else {
-				return ctx.json({ error: 'Failed to delete case' }, 500);
+				throw new errorHandler(KnownErrorCode.UNKNOWN_ERROR);
 			}
-		} catch (error) {
-			console.error(error);
-			return ctx.json({ error: 'Internal server error' }, 500);
+		} catch (e) {
+			return globalErrorHandler(e as Error, ctx);
 		}
 	}
 }

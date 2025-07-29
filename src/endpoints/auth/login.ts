@@ -187,8 +187,8 @@ export class userLogin extends OpenAPIRoute {
 
 			ctx.header('Access-Control-Allow-Credentials', 'true');
 			return ctx.json({ message: 'Login successful' }, 200);
-		} catch (error) {
-			return globalErrorHandler(error as Error, ctx);
+		} catch (e) {
+			return globalErrorHandler(e as Error, ctx);
 		}
 	}
 }

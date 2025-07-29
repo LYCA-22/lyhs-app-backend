@@ -116,8 +116,8 @@ export class OpenIdLogin extends OpenAPIRoute {
 			}
 
 			return ctx.json({ message: 'success', session_key: sessionKey, JSEESIONID: JSEESIONID, SRV: SRV });
-		} catch (error) {
-			return globalErrorHandler(error as Error, ctx);
+		} catch (e) {
+			return globalErrorHandler(e as Error, ctx);
 		}
 	}
 }

@@ -33,8 +33,8 @@ export class getAbsence extends OpenAPIRoute {
 			const result = await res.json();
 
 			return ctx.json({ result: result }, 200);
-		} catch (error) {
-			return globalErrorHandler(error as Error, ctx);
+		} catch (e) {
+			return globalErrorHandler(e as Error, ctx);
 		}
 	}
 }

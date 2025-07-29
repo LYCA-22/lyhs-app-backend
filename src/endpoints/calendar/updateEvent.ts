@@ -3,6 +3,7 @@ import { AppContext } from '../..';
 import { verifySession } from '../../utils/verifySession';
 import { getUserById } from '../../utils/getUserData';
 import { userData } from '../../types';
+import { globalErrorHandler } from '../../utils/errorHandler';
 
 export class UpdateEvent extends OpenAPIRoute {
 	schema: OpenAPIRouteSchema = {
@@ -117,9 +118,8 @@ export class UpdateEvent extends OpenAPIRoute {
 				.bind(title, description, date, office, id)
 				.run();
 			return ctx.json({ message: 'Event update successful' }, 200);
-		} catch (error: any) {
-			console.error('Error updating event:', error);
-			return ctx.json({ error: error.message }, 400);
+		} catch (e) {
+			return globalErrorHandler(e as Error, ctx);
 		}
 	}
 }
