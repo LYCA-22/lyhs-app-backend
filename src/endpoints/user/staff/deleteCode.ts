@@ -183,9 +183,7 @@ export class deleteStaffCode extends OpenAPIRoute {
 
 			// 檢查註冊代碼是否存在
 			const existingCode = await DatabaseHelper.executeQuery(
-				env.DATABASE.prepare(`SELECT registerCode FROM register_codes WHERE registerCode = ?`)
-					.bind(codeToDelete)
-					.first<{ registerCode: string }>(),
+				env.DATABASE.prepare(`SELECT code FROM register_codes WHERE code = ?`).bind(codeToDelete).first<{ registerCode: string }>(),
 				KnownErrorCode.REGISTRATION_CODE_NOT_FOUND,
 			);
 
@@ -194,7 +192,7 @@ export class deleteStaffCode extends OpenAPIRoute {
 
 			// 刪除註冊代碼
 			const deleteResult = await DatabaseHelper.executeQuery(
-				env.DATABASE.prepare(`DELETE FROM register_codes WHERE registerCode = ?`).bind(codeToDelete).run(),
+				env.DATABASE.prepare(`DELETE FROM register_codes WHERE code = ?`).bind(codeToDelete).run(),
 			);
 
 			// 檢查刪除是否成功

@@ -1,7 +1,6 @@
 import { OpenAPIRoute } from 'chanfana';
 import { AppContext } from '../../..';
 import { globalErrorHandler } from '../../../utils/errorHandler';
-import { getSetCookieHeaders } from './getValidateImg';
 import { errorHandler, KnownErrorCode } from '../../../utils/error';
 import { checkService } from '../../../utils/checkService';
 
@@ -10,10 +9,20 @@ interface OpenIdLoginData {
 	password: string;
 }
 
+function getSetCookieHeaders(headers: Headers): string[] {
+	const cookies: string[] = [];
+	headers.forEach((value, key) => {
+		if (key.toLowerCase() === 'set-cookie') {
+			cookies.push(value);
+		}
+	});
+	return cookies;
+}
+
 export class OpenIdLogin extends OpenAPIRoute {
 	async handle(ctx: AppContext) {
 		try {
-			await checkService('school_system', ctx);
+			await checkService('school_affairs_openId', ctx);
 
 			const { userId, password }: OpenIdLoginData = await ctx.req.json();
 			if (!userId || !password) {

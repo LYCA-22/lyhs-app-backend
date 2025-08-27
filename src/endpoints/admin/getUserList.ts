@@ -1,17 +1,20 @@
 import { OpenAPIRoute, OpenAPIRouteSchema } from 'chanfana';
 import { AppContext } from '../..';
 import { verifySession } from '../../utils/verifySession';
-import { globalErrorHandler } from '../../utils/errorHandler';
+import { AuthorizationHelper, globalErrorHandler } from '../../utils/errorHandler';
+import { getUserById } from '../../utils/getUserData';
+import { errorHandler, KnownErrorCode } from '../../utils/error';
+import { userData } from '../../types';
 
-export class getUserNum extends OpenAPIRoute {
+export class getUserList extends OpenAPIRoute {
 	schema: OpenAPIRouteSchema = {
-		summary: '獲取使用者數量',
+		summary: '獲取使用者資料列表',
 		description: '此操作僅限擁有管理權限的帳號。',
 		tags: ['系統管理'],
 		security: [{ sessionId: [] }],
 		responses: {
 			200: {
-				description: '成功獲取使用者帳號數量',
+				description: '成功獲取使用者資料',
 				content: {
 					'application/json': {
 						schema: {
@@ -57,16 +60,21 @@ export class getUserNum extends OpenAPIRoute {
 		const env = ctx.env;
 
 		try {
-			await verifySession(ctx);
-			const userNum = await env.DATABASE.prepare('SELECT COUNT(*) FROM accountData').first();
-			const typeCount = await env.DATABASE.prepare('SELECT type, COUNT(*) as count FROM accountData GROUP BY type').all();
+			const userId = await verifySession(ctx);
+			const userData = (await getUserById(userId as string, ctx)) as userData;
+			if (!userData) throw new errorHandler(KnownErrorCode.USER_NOT_FOUND);
+
+			// 驗證帳號身份與等級
+			AuthorizationHelper.requireStaff(userData.type as string);
+			AuthorizationHelper.requireAdmin(userData.level as string);
+
+			const allUserData = await env.DATABASE.prepare(
+				'SELECT name, email, id, type, role, class, grade, number, oauth, created_at, updated_at, stu_Id FROM accountData',
+			).all();
 
 			return ctx.json(
 				{
-					data: {
-						totalUsers: userNum,
-						typeStatistics: typeCount.results,
-					},
+					data: allUserData.results,
 				},
 				200,
 			);

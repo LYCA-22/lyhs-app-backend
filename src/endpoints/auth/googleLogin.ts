@@ -8,6 +8,7 @@ import { encryptToken } from '../../utils/hashSessionId';
 import { setCookie } from 'hono/cookie';
 import { getUserByEmail } from '../../utils/getUserData';
 import { globalErrorHandler } from '../../utils/errorHandler';
+import { errorHandler, KnownErrorCode } from '../../utils/error';
 
 export class googleLogin extends OpenAPIRoute {
 	schema: OpenAPIRouteSchema = {
@@ -109,15 +110,15 @@ export class googleLogin extends OpenAPIRoute {
 			redirect_uri: string;
 		};
 
-		if (loginType != 'APP' && loginType != 'WEB') {
-			return ctx.json({ error: 'Invalid login type' }, 400);
-		}
-
-		if (flow !== 'authorization_code') {
-			return ctx.json({ error: 'Invalid flow type' }, 400);
-		}
-
 		try {
+			if (loginType != 'APP' && loginType != 'WEB') {
+				throw new errorHandler(KnownErrorCode.INVALID_LOGIN_TYPE);
+			}
+
+			if (flow !== 'authorization_code') {
+				throw new errorHandler(KnownErrorCode.GOOGLE_API_ERROR);
+			}
+
 			const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
 				method: 'POST',
 				headers: {
@@ -146,12 +147,21 @@ export class googleLogin extends OpenAPIRoute {
 			});
 
 			if (!userInfoResponse.ok) {
-				throw new Error('Failed to fetch user info from Google');
+				throw new errorHandler(KnownErrorCode.GOOGLE_AUTH_FAILED);
 			}
 
+			// 取得GOOGLE帳號資料，並與資料庫進行對比
 			const userInfo = await userInfoResponse.json();
 			const { email } = userInfo as UserInfo;
 			const user = (await getUserByEmail(email, ctx)) as userData;
+			if (!user.id || user.id === null || user.id === '') {
+				throw new errorHandler(KnownErrorCode.USER_NOT_FOUND);
+			}
+
+			if (!user.oauth?.includes('GOOGLE')) {
+				throw new errorHandler(KnownErrorCode.OAUTH_NOT_CONNECTED);
+			}
+
 			let sessionId = crypto.randomUUID();
 			const loginTime = new Date(Date.now()).toISOString();
 			const expirationTime = new Date(Date.now() + 12 * 60 * 60).toISOString();
@@ -201,7 +211,7 @@ export class googleLogin extends OpenAPIRoute {
 			});
 
 			ctx.header('Access-Control-Allow-Credentials', 'true');
-			return ctx.json({ message: 'Login successful' }, 200);
+			return ctx.json(200);
 		} catch (e) {
 			return globalErrorHandler(e as Error, ctx);
 		}

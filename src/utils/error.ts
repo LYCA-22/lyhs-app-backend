@@ -42,6 +42,7 @@ export enum KnownErrorCode {
 	INVALID_LOGIN_TYPE = 'L2012',
 	SESSION_IP_MISMATCH = 'L2013',
 	MALFORMED_SESSION_DATA = 'L2014',
+	OAUTH_NOT_CONNECTED = 'L2015',
 
 	// Authorization errors (3000-3999)
 	FORBIDDEN = 'L3000',
@@ -158,6 +159,7 @@ export const ErrorMessages: Record<KnownErrorCode, string> = {
 	[KnownErrorCode.STAFF_REQUIRED]: '需要工作人員權限',
 	[KnownErrorCode.ACCOUNT_LEVEL_INSUFFICIENT]: '帳號等級不足',
 	[KnownErrorCode.RESOURCE_ACCESS_DENIED]: '資源存取被拒絕',
+	[KnownErrorCode.OAUTH_NOT_CONNECTED]: '此登入方式未綁定',
 
 	// Validation errors
 	[KnownErrorCode.MISSING_REQUIRED_FIELDS]: '缺少必填欄位',
@@ -265,6 +267,7 @@ export const ErrorStatusCodes: Record<KnownErrorCode, ContentfulStatusCode> = {
 	[KnownErrorCode.STAFF_REQUIRED]: 403,
 	[KnownErrorCode.ACCOUNT_LEVEL_INSUFFICIENT]: 403,
 	[KnownErrorCode.RESOURCE_ACCESS_DENIED]: 403,
+	[KnownErrorCode.OAUTH_NOT_CONNECTED]: 403,
 
 	// Validation errors - 400
 	[KnownErrorCode.MISSING_REQUIRED_FIELDS]: 400,

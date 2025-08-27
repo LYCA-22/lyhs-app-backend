@@ -1,6 +1,6 @@
-import { OpenAPIRoute, OpenAPIRouteSchema } from 'chanfana';
+import { OpenAPIRoute, OpenAPIRouteSchema, Uuid } from 'chanfana';
 import { AppContext } from '../..';
-import { userData } from '../../types';
+import { userData, userDataRaw } from '../../types';
 import { hashPassword } from '../../utils/hashPsw';
 import { globalErrorHandler } from '../../utils/errorHandler';
 import { errorHandler, KnownErrorCode } from '../../utils/error';
@@ -86,7 +86,7 @@ export class userRegister extends OpenAPIRoute {
 
 	async handle(ctx: AppContext) {
 		const env = ctx.env;
-		const { email, password, name, Class, grade, number }: userData = await ctx.req.json();
+		const { email, password, name, Class, grade, number, stu_id }: userData = await ctx.req.json();
 
 		try {
 			const existingUser = await env.DATABASE.prepare('SELECT * FROM accountData WHERE email = ?').bind(email).first();
@@ -98,11 +98,11 @@ export class userRegister extends OpenAPIRoute {
 
 			await env.DATABASE.prepare(
 				`
-				INSERT INTO accountData (email, password, name, number, type, class, grade)
-				VALUES (?, ?, ?, ?, ?, ?, ?)
+				INSERT INTO accountData (email, password, name, number, type, class, grade, stu_id, oauth)
+				VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 			`,
 			)
-				.bind(email, hashedPassword, name, number, 'stu', Class, grade)
+				.bind(email, hashedPassword, name, number, 'stu', Class, grade, stu_id, `GOOGLE`)
 				.run();
 
 			return ctx.json({ message: 'User registered successfully' }, 200);

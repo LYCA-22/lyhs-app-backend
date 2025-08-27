@@ -1,6 +1,7 @@
 import { createRouter } from '..';
 import { AppRouter } from '../..';
 import { listAd } from './ad/list';
+import { registerAnnouncementRoutes } from './announcement';
 import { registerPcsRoute } from './pcs';
 import { registerRadioRoutes } from './radio';
 import { registerRepairRoutes } from './repair';
@@ -16,5 +17,6 @@ export function registerLypsRoute(): AppRouter {
 	router.route('/pcs', registerPcsRoute());
 	router.route('/repair', registerRepairRoutes());
 	router.route('/school', registerSchoolRoutes());
+	router.route('/announcement', registerAnnouncementRoutes());
 	return router;
 }

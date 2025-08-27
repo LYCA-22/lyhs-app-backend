@@ -2,6 +2,7 @@ import { OpenAPIRoute, OpenAPIRouteSchema } from 'chanfana';
 import { AppContext } from '../../..';
 import { verifySession } from '../../../utils/verifySession';
 import { globalErrorHandler } from '../../../utils/errorHandler';
+import { errorHandler, KnownErrorCode } from '../../../utils/error';
 
 export class createStaffCode extends OpenAPIRoute {
 	schema: OpenAPIRouteSchema = {
@@ -139,7 +140,7 @@ export class createStaffCode extends OpenAPIRoute {
 
 			if (level !== 'A1') {
 				console.error('Unauthorized access attempt');
-				return ctx.json({ error: 'Forbidden' }, 403);
+				throw new errorHandler(KnownErrorCode.FORBIDDEN, 'Unauthorized access attempt');
 			}
 
 			const code = Array.from(crypto.getRandomValues(new Uint8Array(6)))
@@ -158,7 +159,7 @@ export class createStaffCode extends OpenAPIRoute {
 				`INSERT INTO register_codes (created_userId, created_email, vuli, level, number, code)
 				VALUES (?, ?, ?, ?, ?, ?)`,
 			)
-				.bind(codeData.createUserId, codeData.createUserEmail, codeData.vuli, codeData.level, codeData.user_number, codeData.registerCode)
+				.bind(userId, email, codeData.vuli, codeData.level, codeData.user_number, codeData.registerCode)
 				.run();
 			return ctx.json({ code: code }, 200);
 		} catch (e) {

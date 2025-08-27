@@ -14,6 +14,7 @@ export interface userData {
 	oauth?: string[];
 	auth_person?: string;
 	number: number;
+	stu_id?: string;
 }
 
 export enum UserRole {
