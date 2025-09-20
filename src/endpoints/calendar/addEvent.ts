@@ -64,9 +64,17 @@ export class addEvent extends OpenAPIRoute {
 	async handle(ctx: AppContext) {
 		const env = ctx.env;
 		try {
-			const result = await verifySession(ctx);
+			await verifySession(ctx);
 
-			const { id, title, description, date, office }: { id: string; title: string; description: string; date: string; office: string } =
+			const {
+				title,
+				description,
+				start_time,
+				end_time,
+				office,
+				all_day,
+				location,
+			}: { title: string; description: string; start_time: string; end_time: string; office: string; all_day: boolean; location: string } =
 				await ctx.req.json();
 			if (!id || !title || !description || !date || !office) {
 				throw new errorHandler(KnownErrorCode.MISSING_REQUIRED_FIELDS);

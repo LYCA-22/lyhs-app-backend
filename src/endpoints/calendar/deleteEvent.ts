@@ -65,7 +65,7 @@ export class deleteEvent extends OpenAPIRoute {
 		const env = ctx.env;
 		try {
 			const result = await verifySession(ctx);
-			const { id }: { id: string } = await ctx.req.json();
+			const id = ctx.req.query('id');
 			if (!id) {
 				throw new errorHandler(KnownErrorCode.MISSING_REQUIRED_FIELDS);
 			}

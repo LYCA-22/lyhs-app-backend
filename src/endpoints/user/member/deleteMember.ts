@@ -1,16 +1,15 @@
 import { OpenAPIRoute } from 'chanfana';
 import { AppContext } from '../../..';
-import { verifySession } from '../../../utils/verifySession';
-import { getUserById } from '../../../utils/getUserData';
-import { memberDataRaw, userData } from '../../../types';
-import { errorHandler, KnownErrorCode } from '../../../utils/error';
 import { globalErrorHandler } from '../../../utils/errorHandler';
+import { verifySession } from '../../../utils/verifySession';
+import { userData } from '../../../types';
+import { getUserById } from '../../../utils/getUserData';
+import { errorHandler, KnownErrorCode } from '../../../utils/error';
 
-export class addMember extends OpenAPIRoute {
+export class deleteMember extends OpenAPIRoute {
 	async handle(ctx: AppContext) {
 		try {
-			const { data } = (await ctx.req.json()) as { data: memberDataRaw[] };
-
+			const id = ctx.req.query('id');
 			const userId = await verifySession(ctx);
 			const results = (await getUserById(userId as string, ctx)) as userData;
 
@@ -19,11 +18,7 @@ export class addMember extends OpenAPIRoute {
 				throw new errorHandler(KnownErrorCode.FORBIDDEN);
 			}
 
-			for (const member of data) {
-				await ctx.env.DATABASE.prepare('INSERT INTO member_info (name, stu_id, info, status, lyps_id) VALUES (?, ?, ?, ?, ?)')
-					.bind(member.name, member.stu_id, JSON.stringify(member.info), JSON.stringify(member.status), member.lyps_id)
-					.run();
-			}
+			await ctx.env.DATABASE.prepare('DELETE FROM member_info WHERE id = ?').bind(id).run();
 
 			return ctx.json(200);
 		} catch (e) {
